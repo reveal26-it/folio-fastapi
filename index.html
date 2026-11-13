@@ -7,7 +7,7 @@
 
         :root {
             --bg-fallback: #F4F1EA;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #FFFDF8 0%, #E8E2D5 100%);
+            --bg-gradient: radial-gradient(circle at 50% 10%, #FFFFFF 0%, #EBE5D9 80%);
             --ink: #2A2826;
             --accent: #C9A227;
             --muted: #8A877E;
@@ -20,7 +20,7 @@
 
         [data-theme="dark"] {
             --bg-fallback: #121212;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #2A2A2A 0%, #0A0A0A 100%);
+            --bg-gradient: radial-gradient(circle at 50% 10%, #2A2A2A 0%, #0A0A0A 80%);
             --ink: #E0E0E0;
             --accent: #D4AF37;
             --muted: #666666;
@@ -310,7 +310,10 @@
     <script>
         let currentBook = null;
         let currentWord = null;
-        let marks = JSON.parse(localStorage.getItem('folio_marks')) || {};
+        
+        // Wipe old ghost marks from previous versions
+        localStorage.removeItem('folio_marks');
+        let marks = {};
 
         function toggleTheme() {
             const body = document.body;
@@ -441,7 +444,6 @@
             } else {
                 marks[key] = { type: 'verse_highlight' };
             }
-            localStorage.setItem('folio_marks', JSON.stringify(marks));
             renderChapter();
         }
 
@@ -497,14 +499,12 @@
                 chapter: parseInt(document.getElementById('chapterSelect').value),
                 word: currentWord.raw_word
             };
-            localStorage.setItem('folio_marks', JSON.stringify(marks));
             renderChapter();
             closeModal();
         }
 
         function removeMark() {
             delete marks[currentWord.word_id];
-            localStorage.setItem('folio_marks', JSON.stringify(marks));
             renderChapter();
             closeModal();
         }
