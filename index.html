@@ -3,27 +3,45 @@
 <head>
     <title>FOLIO</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
         :root {
+            /* Light Mode (Digital Paper) */
             --bg: #F4F1EA;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #FDFBF7 0%, #F4F1EA 100%);
             --ink: #2A2826;
             --accent: #C9A227;
             --muted: #8A877E;
             --surface: #FFFFFF;
             --border: rgba(0,0,0,0.06);
+            --highlight: #F1E8C9;
+            --shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Mode (Night Reading) */
+            --bg: #121212;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1E1E1E 0%, #121212 100%);
+            --ink: #E0E0E0;
+            --accent: #D4AF37;
+            --muted: #666666;
+            --surface: #1E1E1E;
+            --border: rgba(255,255,255,0.08);
+            --highlight: #333026;
+            --shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
 
         * { box-sizing: border-box; }
 
         body { 
-            background-color: var(--bg); 
+            background: var(--bg-gradient); 
             color: var(--ink); 
             font-family: 'Inter', sans-serif; 
             margin: 0; 
             display: flex; 
             height: 100vh;
             overflow: hidden;
+            transition: background 0.5s ease, color 0.5s ease;
         }
 
         /* Sidebar */
@@ -31,11 +49,13 @@
             width: 260px; 
             padding: 2rem 1.5rem; 
             border-right: 1px solid var(--border); 
-            background-color: var(--bg);
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
             gap: 2rem;
             z-index: 10;
+            transition: border 0.5s ease;
         }
         
         .logo {
@@ -44,69 +64,148 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             color: var(--ink);
-            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
+        .theme-toggle {
+            cursor: pointer;
+            font-size: 1.2rem;
+            user-select: none;
+            transition: transform 0.3s ease;
+        }
+        .theme-toggle:hover { transform: rotate(20deg); }
+
         .nav-menu { display: flex; flex-direction: column; gap: 0.25rem; }
-        .nav-item { padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--muted); transition: all 0.2s; }
-        .nav-item:hover { color: var(--ink); }
+        .nav-item { padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--muted); transition: all 0.3s; }
+        .nav-item:hover { color: var(--ink); background: rgba(0,0,0,0.03); }
         .nav-item.active { background-color: var(--ink); color: var(--bg); }
 
         .nav-controls { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; }
         label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; display: block; }
-        select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; background-color: var(--surface); font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--ink); outline: none; cursor: pointer; }
+        select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; background-color: var(--surface); font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--ink); outline: none; cursor: pointer; transition: all 0.3s; }
 
         /* Main Content */
-        .main { flex: 1; padding: 4rem 10%; overflow-y: auto; position: relative; background: var(--bg); }
-        .view { display: none; }
+        .main { flex: 1; padding: 4rem 10%; overflow-y: auto; position: relative; }
+        .view { display: none; animation: fadeUp 0.4s ease forwards; }
         .view.active { display: block; }
-        
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 0.2rem; letter-spacing: -0.02em; }
         .chapter-title { font-size: 0.9rem; color: var(--muted); margin-bottom: 3rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
 
         /* Reader Text */
-        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; margin-bottom: 2.5rem; max-width: 750px; color: var(--ink); }
+        .verse-wrapper { position: relative; display: flex; align-items: flex-start; margin-bottom: 2.5rem; max-width: 750px; }
+        
+        .verse-highlight-btn {
+            position: absolute;
+            left: -30px;
+            top: 10px;
+            opacity: 0;
+            cursor: pointer;
+            color: var(--muted);
+            transition: opacity 0.2s;
+            font-size: 1rem;
+        }
+        .verse-wrapper:hover .verse-highlight-btn { opacity: 1; }
+        .verse-highlight-btn:hover { color: var(--accent); }
+
+        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; color: var(--ink); transition: background 0.3s; padding: 4px 8px; border-radius: 6px; }
+        .verse.verse-highlighted { background-color: var(--highlight); }
+        
         .v-num { font-size: 0.75rem; color: var(--accent); font-family: 'Inter', sans-serif; font-weight: 600; vertical-align: super; margin-right: 12px; }
-        .word { cursor: pointer; padding: 2px 2px; border-radius: 4px; transition: background-color 0.2s ease; }
-        .word:hover { background-color: #F1E8C9; color: var(--ink); }
-        .word.highlighted { background-color: #F1E8C9; }
+        
+        .word { 
+            cursor: pointer; 
+            padding: 2px 3px; 
+            border-radius: 4px; 
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-block;
+        }
+        
+        .word:hover { 
+            background-color: var(--highlight); 
+            color: var(--ink); 
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .word.highlighted { background-color: var(--highlight); }
         .word.notable { border-bottom: 2px solid var(--accent); }
+
+        .note-icon {
+            font-size: 0.7rem;
+            color: var(--accent);
+            vertical-align: super;
+            margin-left: 2px;
+            cursor: pointer;
+        }
 
         /* Margin Rail */
         .margin-rail { position: fixed; right: 2rem; top: 0; width: 20px; height: 100vh; display: flex; flex-direction: column; align-items: center; padding-top: 6rem; gap: 1rem; }
-        .rail-icon { width: 8px; height: 8px; background-color: var(--accent); border-radius: 50%; opacity: 0.6; cursor: pointer; }
+        .rail-icon { width: 8px; height: 8px; background-color: var(--accent); border-radius: 50%; opacity: 0.6; cursor: pointer; transition: transform 0.2s; }
+        .rail-icon:hover { transform: scale(1.5); opacity: 1; }
 
         /* Word Card Modal */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(42, 40, 38, 0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.4); 
+            backdrop-filter: blur(4px);
+            z-index: 100; 
+            justify-content: center; 
+            align-items: center; 
+        }
         .modal-overlay.active { display: flex; }
-        .word-card { background: var(--surface); width: 500px; border-radius: 12px; padding: 2.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        
+        .word-card { 
+            background: var(--surface); 
+            width: 500px; 
+            border-radius: 16px; 
+            padding: 2.5rem; 
+            box-shadow: var(--shadow);
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.active .word-card {
+            transform: scale(1);
+            opacity: 1;
+        }
+
         .word-card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
         
         .tabs { display: flex; gap: 2rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-        .tab { padding: 0.5rem 0; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+        .tab { padding: 0.5rem 0; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.85rem; transition: color 0.2s; }
         .tab.active { color: var(--ink); border-bottom: 2px solid var(--accent); }
-        .tab-content { display: none; min-height: 100px; }
+        .tab-content { display: none; min-height: 100px; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
+        @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
 
-        /* Context Tab Styles */
         .original-word { font-size: 1.8rem; font-family: 'Lora', serif; color: var(--ink); margin-bottom: 0.5rem; }
         .transliteration { font-family: 'Inter'; font-size: 1rem; color: var(--muted); margin-bottom: 1rem; }
         .strongs-info { background: var(--bg); padding: 1rem; border-radius: 8px; font-family: 'Inter'; font-size: 0.85rem; }
         .strongs-number { color: var(--accent); font-weight: 600; }
         .parsing { color: var(--muted); font-style: italic; margin-top: 0.5rem; }
 
-        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; cursor: pointer; font-family: 'Inter'; font-size: 0.8rem; margin-right: 0.5rem; margin-top: 1rem; color: var(--ink); }
-        .mark-btn:hover { border-color: var(--accent); }
-        .note-input { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 1rem; font-family: 'Inter'; font-size: 0.85rem; outline: none; }
-
-        .book-card { background-color: var(--surface); padding: 2rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem; }
-        .book-card h4 { margin: 0 0 0.5rem 0; font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; }
-        .book-card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; cursor: pointer; font-family: 'Inter'; font-size: 0.8rem; margin-right: 0.5rem; margin-top: 1rem; color: var(--ink); transition: all 0.2s; }
+        .mark-btn:hover { border-color: var(--accent); background: var(--highlight); }
+        .note-input { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 1rem; font-family: 'Inter'; font-size: 0.85rem; outline: none; background: var(--bg); color: var(--ink); }
     </style>
 </head>
-<body>
+<body data-theme="light">
+
     <div class="sidebar">
-        <div class="logo">FOLIO</div>
+        <div class="logo">
+            <span>FOLIO</span>
+            <span class="theme-toggle" onclick="toggleTheme()">🌙</span>
+        </div>
         <div class="nav-menu">
             <div class="nav-item active" onclick="switchView('reader', this)">The Reader</div>
             <div class="nav-item" onclick="switchView('library', this)">The Library</div>
@@ -115,7 +214,6 @@
         <div class="nav-controls" id="readerControls">
             <div><label>Book</label><select id="bookSelect" onchange="loadBook()"></select></div>
             <div><label>Chapter</label><select id="chapterSelect" onchange="renderChapter()"></select></div>
-            <div><label>Mode</label><select id="modeSelect"><option>Online</option><option>Force Offline</option></select></div>
         </div>
     </div>
     
@@ -129,23 +227,23 @@
         <div id="libraryView" class="view">
             <div class="page-title">The Library</div>
             <div class="chapter-title">Downloaded Texts</div>
-            <div class="book-card">
-                <h4>The Literal Bible (BSB Interlinear)</h4>
-                <p>66 Books • Fully indexed at the word level.</p>
+            <div class="book-card" style="background: var(--surface); padding: 2rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h4 style="margin-top:0;">The Literal Bible (BSB Interlinear)</h4>
+                <p style="color: var(--muted); font-size: 0.9rem;">66 Books • Fully indexed at the word level.</p>
             </div>
         </div>
 
         <div id="plannerView" class="view">
             <div class="page-title">The Planner</div>
             <div class="chapter-title">Read at your own pace.</div>
-            <div class="book-card">
-                <h4>Set Your Goal</h4>
+            <div class="book-card" style="background: var(--surface); padding: 2rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h4 style="margin-top:0;">Set Your Goal</h4>
                 <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
-                    <label style="margin:0;">Days to finish</label>
-                    <input type="number" id="goalDays" value="30" style="padding: 0.5rem; width: 80px; border: 1px solid var(--border); border-radius: 6px;">
+                    <label style="margin:0; color: var(--muted);">Days to finish</label>
+                    <input type="number" id="goalDays" value="30" style="padding: 0.5rem; width: 80px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--ink);">
                     <button class="mark-btn" onclick="calcPlan()" style="margin:0;">Calculate</button>
                 </div>
-                <p id="planResult" style="margin-top: 1rem; font-weight: 600;"></p>
+                <p id="planResult" style="margin-top: 1rem; font-weight: 600; color: var(--accent);"></p>
             </div>
         </div>
     </div>
@@ -183,6 +281,7 @@
                 <input type="text" class="note-input" id="noteInput" placeholder="Add a private note...">
                 <button class="mark-btn" onclick="markWord('highlight')">Highlight</button>
                 <button class="mark-btn" onclick="markWord('notable')">Notable</button>
+                <button class="mark-btn" onclick="markWord('note')">Save Note</button>
                 <button class="mark-btn" onclick="closeModal()">Close</button>
             </div>
         </div>
@@ -192,6 +291,21 @@
         let currentBook = null;
         let currentWord = null;
         let marks = JSON.parse(localStorage.getItem('folio_marks')) || {};
+
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.querySelector('.theme-toggle').textContent = isDark ? '🌙' : '☀️';
+            localStorage.setItem('folio_theme', isDark ? 'light' : 'dark');
+        }
+
+        // Load saved theme
+        if (localStorage.getItem('folio_theme') === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
 
         function switchView(viewName, element) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -249,8 +363,22 @@
             rail.innerHTML = '';
 
             verses.forEach(v => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'verse-wrapper';
+                
+                // Verse Highlight Button
+                const highlightBtn = document.createElement('span');
+                highlightBtn.className = 'verse-highlight-btn';
+                highlightBtn.innerHTML = '✎';
+                highlightBtn.title = "Highlight Verse";
+                highlightBtn.onclick = () => toggleVerseHighlight(v.node_id);
+                wrapper.appendChild(highlightBtn);
+
+                // The Verse Text
                 const div = document.createElement('div');
                 div.className = 'verse';
+                if (marks['verse_' + v.node_id]) div.classList.add('verse-highlighted');
+                
                 div.innerHTML = `<span class="v-num">${v.verse}</span>`;
                 
                 const words = currentBook.word_tokens.filter(t => t.node_id === v.node_id);
@@ -264,14 +392,24 @@
                     if (marks[w.word_id] && marks[w.word_id].type === 'highlight') span.classList.add('highlighted');
                     if (marks[w.word_id] && marks[w.word_id].type === 'notable') span.classList.add('notable');
                     
+                    // Add Note Icon if note exists
+                    if (marks[w.word_id] && marks[w.word_id].type === 'note') {
+                        const icon = document.createElement('span');
+                        icon.className = 'note-icon';
+                        icon.textContent = '📝';
+                        span.appendChild(icon);
+                    }
+                    
                     div.appendChild(span);
                 });
-                container.appendChild(div);
+                
+                wrapper.appendChild(div);
+                container.appendChild(wrapper);
             });
 
             Object.keys(marks).forEach(id => {
                 const mark = marks[id];
-                if (mark.book === document.getElementById('bookSelect').value && mark.chapter === chapter) {
+                if (mark.book === document.getElementById('bookSelect').value && mark.chapter === chapter && !id.startsWith('verse_')) {
                     const dot = document.createElement('div');
                     dot.className = 'rail-icon';
                     dot.title = `Mark: ${mark.word}`;
@@ -280,22 +418,30 @@
             });
         }
 
+        function toggleVerseHighlight(nodeId) {
+            const key = 'verse_' + nodeId;
+            if (marks[key]) {
+                delete marks[key];
+            } else {
+                marks[key] = { type: 'verse_highlight' };
+            }
+            localStorage.setItem('folio_marks', JSON.stringify(marks));
+            renderChapter();
+        }
+
         function openWordCard(wordObj) {
             currentWord = wordObj;
             document.getElementById('modalWordTitle').textContent = wordObj.raw_word;
             document.getElementById('wordModal').classList.add('active');
             
-            // ORIGINAL CONTEXT DATA
             document.getElementById('origWord').textContent = wordObj.hebrew_greek || "";
             document.getElementById('translitWord').textContent = wordObj.transliteration || "";
             document.getElementById('strongsNum').textContent = `Strong's: ${wordObj.strongs || "N/A"} (${wordObj.language || "unknown"})`;
             document.getElementById('parsingInfo').textContent = wordObj.parsing || "";
             
-            // CONCORDANCE
             const count = currentBook.word_tokens.filter(t => t.raw_word.toLowerCase() === wordObj.raw_word.toLowerCase()).length;
             document.getElementById('concordanceCount').textContent = count;
             
-            // DICTIONARY
             document.getElementById('dictionaryDefinition').textContent = "Fetching definition...";
             fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordObj.raw_word}`)
                 .then(res => res.json())
