@@ -6,19 +6,20 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
         :root {
-            --bg: #F4F1EA;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #FFFDF8 0%, #EBE5D9 100%);
+            --bg-fallback: #F4F1EA;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #FFFDF8 0%, #E8E2D5 100%);
             --ink: #2A2826;
             --accent: #C9A227;
             --muted: #8A877E;
             --surface: #FFFFFF;
             --border: rgba(0,0,0,0.06);
             --highlight: #F1E8C9;
-            --shadow: 0 10px 30px rgba(0,0,0,0.05);
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --sidebar-bg: rgba(255, 255, 255, 0.4);
         }
 
         [data-theme="dark"] {
-            --bg: #121212;
+            --bg-fallback: #121212;
             --bg-gradient: radial-gradient(circle at 50% 0%, #2A2A2A 0%, #0A0A0A 100%);
             --ink: #E0E0E0;
             --accent: #D4AF37;
@@ -26,21 +27,24 @@
             --surface: #1E1E1E;
             --border: rgba(255,255,255,0.08);
             --highlight: #333026;
-            --shadow: 0 10px 30px rgba(0,0,0,0.4);
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
+            --sidebar-bg: rgba(18, 18, 18, 0.6);
         }
 
         * { box-sizing: border-box; }
 
         body { 
-            background: var(--bg-gradient); 
+            background-color: var(--bg-fallback);
+            background-image: var(--bg-gradient);
             background-attachment: fixed;
+            background-size: cover;
             color: var(--ink); 
             font-family: 'Inter', sans-serif; 
             margin: 0; 
             display: flex; 
             height: 100vh;
             overflow: hidden;
-            transition: background 0.5s ease, color 0.5s ease;
+            transition: color 0.5s ease;
         }
 
         /* Sidebar */
@@ -48,13 +52,14 @@
             width: 260px; 
             padding: 2rem 1.5rem; 
             border-right: 1px solid var(--border); 
-            background: rgba(255,255,255,0.02);
-            backdrop-filter: blur(10px);
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
             gap: 2rem;
             z-index: 10;
-            transition: border 0.5s ease;
+            transition: background 0.5s ease, border 0.5s ease;
         }
         
         .logo {
@@ -79,14 +84,14 @@
         .nav-menu { display: flex; flex-direction: column; gap: 0.25rem; }
         .nav-item { padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--muted); transition: all 0.3s; }
         .nav-item:hover { color: var(--ink); background: rgba(0,0,0,0.03); }
-        .nav-item.active { background-color: var(--ink); color: var(--bg); }
+        .nav-item.active { background-color: var(--ink); color: var(--bg-fallback); }
 
         .nav-controls { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; }
         label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; display: block; }
         select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; background-color: var(--surface); font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--ink); outline: none; cursor: pointer; transition: all 0.3s; }
 
         /* Main Content */
-        .main { flex: 1; padding: 4rem 10%; overflow-y: auto; position: relative; }
+        .main { flex: 1; padding: 4rem 10%; overflow-y: auto; position: relative; background: transparent; }
         .view { display: none; animation: fadeUp 0.4s ease forwards; }
         .view.active { display: block; }
 
@@ -108,13 +113,14 @@
             opacity: 0;
             cursor: pointer;
             color: var(--muted);
-            transition: opacity 0.2s;
+            transition: opacity 0.2s, color 0.2s;
             font-size: 1rem;
         }
         .verse-wrapper:hover .verse-highlight-btn { opacity: 1; }
         .verse-highlight-btn:hover { color: var(--accent); }
+        .verse-highlight-btn.active { color: var(--accent); opacity: 1; }
 
-        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; color: var(--ink); transition: background 0.3s; padding: 4px 8px; border-radius: 6px; }
+        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; color: var(--ink); transition: background 0.3s; padding: 4px 8px; border-radius: 6px; background: transparent; }
         .verse.verse-highlighted { background-color: var(--highlight); }
         
         .v-num { font-size: 0.75rem; color: var(--accent); font-family: 'Inter', sans-serif; font-weight: 600; vertical-align: super; margin-right: 12px; }
@@ -160,7 +166,6 @@
             z-index: 100; 
             justify-content: center; 
             align-items: center; 
-            /* Remove display:flex and use opacity for transition */
             opacity: 0;
             transition: opacity 0.3s ease;
         }
@@ -176,12 +181,10 @@
             border-radius: 16px; 
             padding: 2.5rem; 
             box-shadow: var(--shadow);
-            /* Start scaled down */
             transform: scale(0.8) translateY(20px);
             transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        /* When active, scale to 1 */
         .modal-overlay.active .word-card {
             transform: scale(1) translateY(0);
         }
@@ -197,16 +200,18 @@
 
         .original-word { font-size: 1.8rem; font-family: 'Lora', serif; color: var(--ink); margin-bottom: 0.5rem; }
         .transliteration { font-family: 'Inter'; font-size: 1rem; color: var(--muted); margin-bottom: 1rem; }
-        .strongs-info { background: var(--bg); padding: 1rem; border-radius: 8px; font-family: 'Inter'; font-size: 0.85rem; }
+        .strongs-info { background: var(--bg-fallback); padding: 1rem; border-radius: 8px; font-family: 'Inter'; font-size: 0.85rem; }
         .strongs-number { color: var(--accent); font-weight: 600; }
         .parsing { color: var(--muted); font-style: italic; margin-top: 0.5rem; }
 
-        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; cursor: pointer; font-family: 'Inter'; font-size: 0.8rem; margin-right: 0.5rem; margin-top: 1rem; color: var(--ink); transition: all 0.2s; }
+        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg-fallback); border-radius: 6px; cursor: pointer; font-family: 'Inter'; font-size: 0.8rem; margin-right: 0.5rem; margin-top: 1rem; color: var(--ink); transition: all 0.2s; }
         .mark-btn:hover { border-color: var(--accent); background: var(--highlight); }
-        .note-input { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 1rem; font-family: 'Inter'; font-size: 0.85rem; outline: none; background: var(--bg); color: var(--ink); }
+        .note-input { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 1rem; font-family: 'Inter'; font-size: 0.85rem; outline: none; background: var(--bg-fallback); color: var(--ink); }
         
         .btn-remove { color: #d9534f; border-color: #d9534f; }
         .btn-remove:hover { background: #d9534f; color: white; }
+        
+        .book-card { background: var(--surface); padding: 2rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem; }
     </style>
 </head>
 <body data-theme="light">
@@ -237,7 +242,7 @@
         <div id="libraryView" class="view">
             <div class="page-title">The Library</div>
             <div class="chapter-title">Downloaded Texts</div>
-            <div class="book-card" style="background: var(--surface); padding: 2rem; border-radius: 8px; border: 1px solid var(--border);">
+            <div class="book-card">
                 <h4 style="margin-top:0;">The Literal Bible (BSB Interlinear)</h4>
                 <p style="color: var(--muted); font-size: 0.9rem;">66 Books • Fully indexed at the word level.</p>
             </div>
@@ -246,11 +251,11 @@
         <div id="plannerView" class="view">
             <div class="page-title">The Planner</div>
             <div class="chapter-title">Read at your own pace.</div>
-            <div class="book-card" style="background: var(--surface); padding: 2rem; border-radius: 8px; border: 1px solid var(--border);">
+            <div class="book-card">
                 <h4 style="margin-top:0;">Set Your Goal</h4>
                 <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
                     <label style="margin:0; color: var(--muted);">Days to finish</label>
-                    <input type="number" id="goalDays" value="30" style="padding: 0.5rem; width: 80px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--ink);">
+                    <input type="number" id="goalDays" value="30" style="padding: 0.5rem; width: 80px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-fallback); color: var(--ink);">
                     <button class="mark-btn" onclick="calcPlan()" style="margin:0;">Calculate</button>
                 </div>
                 <p id="planResult" style="margin-top: 1rem; font-weight: 600; color: var(--accent);"></p>
@@ -383,6 +388,7 @@
                 highlightBtn.className = 'verse-highlight-btn';
                 highlightBtn.innerHTML = '✎';
                 highlightBtn.title = "Highlight Verse";
+                if (marks['verse_' + v.node_id]) highlightBtn.classList.add('active');
                 highlightBtn.onclick = () => toggleVerseHighlight(v.node_id);
                 wrapper.appendChild(highlightBtn);
 
@@ -443,7 +449,6 @@
             currentWord = wordObj;
             document.getElementById('modalWordTitle').textContent = wordObj.raw_word;
             
-            // Check if word is already marked
             const existingMark = marks[wordObj.word_id];
             if (existingMark) {
                 document.getElementById('removeButton').style.display = 'block';
@@ -453,11 +458,9 @@
                 document.getElementById('noteInput').value = "";
             }
 
-            // Use setTimeout to ensure the browser paints the initial state before triggering transition
-            document.getElementById('wordModal').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('wordModal').classList.add('active');
-            }, 10);
+            const modal = document.getElementById('wordModal');
+            modal.style.display = 'flex';
+            setTimeout(() => { modal.classList.add('active'); }, 10);
             
             document.getElementById('origWord').textContent = wordObj.hebrew_greek || "";
             document.getElementById('translitWord').textContent = wordObj.transliteration || "";
@@ -482,7 +485,7 @@
         function closeModal() { 
             const modal = document.getElementById('wordModal');
             modal.classList.remove('active');
-            setTimeout(() => { modal.style.display = 'none'; }, 300); // wait for transition
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
         }
 
         function markWord(type) {
