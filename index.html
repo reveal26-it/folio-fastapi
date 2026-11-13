@@ -6,9 +6,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
         :root {
-            /* Light Mode (Digital Paper) */
             --bg: #F4F1EA;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #FDFBF7 0%, #F4F1EA 100%);
+            --bg-gradient: radial-gradient(circle at 50% 0%, #FFFDF8 0%, #EBE5D9 100%);
             --ink: #2A2826;
             --accent: #C9A227;
             --muted: #8A877E;
@@ -19,9 +18,8 @@
         }
 
         [data-theme="dark"] {
-            /* Dark Mode (Night Reading) */
             --bg: #121212;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #1E1E1E 0%, #121212 100%);
+            --bg-gradient: radial-gradient(circle at 50% 0%, #2A2A2A 0%, #0A0A0A 100%);
             --ink: #E0E0E0;
             --accent: #D4AF37;
             --muted: #666666;
@@ -35,6 +33,7 @@
 
         body { 
             background: var(--bg-gradient); 
+            background-attachment: fixed;
             color: var(--ink); 
             font-family: 'Inter', sans-serif; 
             margin: 0; 
@@ -161,8 +160,15 @@
             z-index: 100; 
             justify-content: center; 
             align-items: center; 
+            /* Remove display:flex and use opacity for transition */
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        .modal-overlay.active { display: flex; }
+        
+        .modal-overlay.active { 
+            display: flex; 
+            opacity: 1;
+        }
         
         .word-card { 
             background: var(--surface); 
@@ -170,13 +176,14 @@
             border-radius: 16px; 
             padding: 2.5rem; 
             box-shadow: var(--shadow);
-            transform: scale(0.9);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Start scaled down */
+            transform: scale(0.8) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        
+        /* When active, scale to 1 */
         .modal-overlay.active .word-card {
-            transform: scale(1);
-            opacity: 1;
+            transform: scale(1) translateY(0);
         }
 
         .word-card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
@@ -197,6 +204,9 @@
         .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; cursor: pointer; font-family: 'Inter'; font-size: 0.8rem; margin-right: 0.5rem; margin-top: 1rem; color: var(--ink); transition: all 0.2s; }
         .mark-btn:hover { border-color: var(--accent); background: var(--highlight); }
         .note-input { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 1rem; font-family: 'Inter'; font-size: 0.85rem; outline: none; background: var(--bg); color: var(--ink); }
+        
+        .btn-remove { color: #d9534f; border-color: #d9534f; }
+        .btn-remove:hover { background: #d9534f; color: white; }
     </style>
 </head>
 <body data-theme="light">
@@ -279,9 +289,14 @@
             
             <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
                 <input type="text" class="note-input" id="noteInput" placeholder="Add a private note...">
-                <button class="mark-btn" onclick="markWord('highlight')">Highlight</button>
-                <button class="mark-btn" onclick="markWord('notable')">Notable</button>
-                <button class="mark-btn" onclick="markWord('note')">Save Note</button>
+                <div id="markButtons">
+                    <button class="mark-btn" onclick="markWord('highlight')">Highlight</button>
+                    <button class="mark-btn" onclick="markWord('notable')">Notable</button>
+                    <button class="mark-btn" onclick="markWord('note')">Save Note</button>
+                </div>
+                <div id="removeButton" style="display:none;">
+                    <button class="mark-btn btn-remove" onclick="removeMark()">Remove Mark</button>
+                </div>
                 <button class="mark-btn" onclick="closeModal()">Close</button>
             </div>
         </div>
@@ -292,7 +307,6 @@
         let currentWord = null;
         let marks = JSON.parse(localStorage.getItem('folio_marks')) || {};
 
-        // Theme Toggle
         function toggleTheme() {
             const body = document.body;
             const isDark = body.getAttribute('data-theme') === 'dark';
@@ -301,7 +315,6 @@
             localStorage.setItem('folio_theme', isDark ? 'light' : 'dark');
         }
 
-        // Load saved theme
         if (localStorage.getItem('folio_theme') === 'dark') {
             document.body.setAttribute('data-theme', 'dark');
             document.querySelector('.theme-toggle').textContent = '☀️';
@@ -366,7 +379,6 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'verse-wrapper';
                 
-                // Verse Highlight Button
                 const highlightBtn = document.createElement('span');
                 highlightBtn.className = 'verse-highlight-btn';
                 highlightBtn.innerHTML = '✎';
@@ -374,7 +386,6 @@
                 highlightBtn.onclick = () => toggleVerseHighlight(v.node_id);
                 wrapper.appendChild(highlightBtn);
 
-                // The Verse Text
                 const div = document.createElement('div');
                 div.className = 'verse';
                 if (marks['verse_' + v.node_id]) div.classList.add('verse-highlighted');
@@ -392,7 +403,6 @@
                     if (marks[w.word_id] && marks[w.word_id].type === 'highlight') span.classList.add('highlighted');
                     if (marks[w.word_id] && marks[w.word_id].type === 'notable') span.classList.add('notable');
                     
-                    // Add Note Icon if note exists
                     if (marks[w.word_id] && marks[w.word_id].type === 'note') {
                         const icon = document.createElement('span');
                         icon.className = 'note-icon';
@@ -432,7 +442,22 @@
         function openWordCard(wordObj) {
             currentWord = wordObj;
             document.getElementById('modalWordTitle').textContent = wordObj.raw_word;
-            document.getElementById('wordModal').classList.add('active');
+            
+            // Check if word is already marked
+            const existingMark = marks[wordObj.word_id];
+            if (existingMark) {
+                document.getElementById('removeButton').style.display = 'block';
+                if (existingMark.note) document.getElementById('noteInput').value = existingMark.note;
+            } else {
+                document.getElementById('removeButton').style.display = 'none';
+                document.getElementById('noteInput').value = "";
+            }
+
+            // Use setTimeout to ensure the browser paints the initial state before triggering transition
+            document.getElementById('wordModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('wordModal').classList.add('active');
+            }, 10);
             
             document.getElementById('origWord').textContent = wordObj.hebrew_greek || "";
             document.getElementById('translitWord').textContent = wordObj.transliteration || "";
@@ -454,7 +479,11 @@
                 }).catch(() => document.getElementById('dictionaryDefinition').textContent = "Offline or API error.");
         }
 
-        function closeModal() { document.getElementById('wordModal').classList.remove('active'); }
+        function closeModal() { 
+            const modal = document.getElementById('wordModal');
+            modal.classList.remove('active');
+            setTimeout(() => { modal.style.display = 'none'; }, 300); // wait for transition
+        }
 
         function markWord(type) {
             const note = document.getElementById('noteInput').value;
@@ -465,6 +494,13 @@
                 chapter: parseInt(document.getElementById('chapterSelect').value),
                 word: currentWord.raw_word
             };
+            localStorage.setItem('folio_marks', JSON.stringify(marks));
+            renderChapter();
+            closeModal();
+        }
+
+        function removeMark() {
+            delete marks[currentWord.word_id];
             localStorage.setItem('folio_marks', JSON.stringify(marks));
             renderChapter();
             closeModal();
