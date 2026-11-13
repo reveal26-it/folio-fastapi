@@ -104,6 +104,7 @@
             <div class="nav-item active" onclick="switchView('timeline', this)">The Timeline</div>
             <div class="nav-item" onclick="switchView('reader', this)">The Reader</div>
             <div class="nav-item" onclick="switchView('library', this)">The Library</div>
+            <div class="nav-item" onclick="switchView('planner', this)">The Planner</div>
             <div class="nav-item" onclick="switchView('profile', this)">My Profile</div>
         </div>
         <div class="nav-controls" id="readerControls" style="display:none;">
@@ -119,7 +120,7 @@
             <div class="chapter-title">Thoughts and revelations from the community.</div>
             
             <div class="timeline-post" style="border-left: 4px solid var(--accent);">
-                <textarea id="newPostContent" placeholder="Share a revelation..." style="width:100%; border:none; background:transparent; font-family:'Lora'; font-size:1.1rem; color:var(--ink); outline:none; resize:none; min-height:80px;"></textarea>
+                <textarea id="newPostContent" placeholder="Share a thought..." style="width:100%; border:none; background:transparent; font-family:'Lora'; font-size:1.1rem; color:var(--ink); outline:none; resize:none; min-height:80px;"></textarea>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
                     <input type="text" id="newPostRef" placeholder="Reference (e.g. John 3:16)" style="border:1px solid var(--border); padding:0.4rem; border-radius:4px; background:var(--bg-fallback); color:var(--ink); font-size:0.8rem;">
                     <button class="mark-btn" onclick="createPost()">Publish</button>
@@ -151,22 +152,34 @@
             <div class="grid-cards" id="libraryContainer"></div>
         </div>
 
+        <!-- PLANNER VIEW -->
+        <div id="plannerView" class="view">
+            <div class="page-title">The Planner</div>
+            <div class="chapter-title">Track your reading progress.</div>
+            
+            <div class="card" style="margin-bottom:2rem;">
+                <h4>Select a Book to Plan</h4>
+                <select id="planBookSelect" onchange="updatePlanProgress()" style="margin-bottom:1rem;"></select>
+                <p id="planStatus" style="font-weight:600; color:var(--accent);">Select a book to see your progress.</p>
+            </div>
+        </div>
+
         <!-- PROFILE VIEW -->
         <div id="profileView" class="view">
             <div class="page-title">My Profile</div>
             <div class="chapter-title">Your reading journey.</div>
             
             <div class="card" style="display:flex; gap:2rem; align-items:center; margin-bottom:2rem;">
-                <div class="avatar" style="width:80px; height:80px; font-size:2rem;">V</div>
-                <div>
-                    <h2 style="margin:0; font-family:'Space Grotesk';">@Victor</h2>
-                    <p style="color:var(--muted); margin:0.5rem 0;">Reading the Bible. Building FOLIO.</p>
+                <div class="avatar" id="profileAvatar" style="width:80px; height:80px; font-size:2rem;">V</div>
+                <div style="flex:1;">
+                    <h2 id="profileUsername" style="margin:0; font-family:'Space Grotesk';">@Victor</h2>
+                    <p id="profileBio" style="color:var(--muted); margin:0.5rem 0;">Loading...</p>
                     <div style="display:flex; gap:1.5rem; font-size:0.9rem; margin-top:1rem;">
                         <span><strong id="profilePostCount">0</strong> Posts</span>
                         <span><strong>4</strong> Books Read</span>
-                        <span><strong>28</strong> Friends</span>
                     </div>
                 </div>
+                <button class="mark-btn" onclick="editProfile()">Edit Profile</button>
             </div>
         </div>
     </div>
@@ -194,6 +207,7 @@
         let currentWord = null;
         let feed = [];
         let library = [];
+        let completedChapters = JSON.parse(localStorage.getItem('folio_completed_chapters')) || [];
 
         function toggleTheme() {
             const body = document.body;
@@ -211,10 +225,11 @@
             
             if (viewName === 'timeline') fetchFeed();
             if (viewName === 'library') fetchLibrary();
-            if (viewName === 'profile') updateProfile();
+            if (viewName === 'profile') fetchProfile();
+            if (viewName === 'planner') populatePlanner();
         }
 
-        // --- SOCIAL LOGIC ---
+        // --- TIMELINE ---
         async function fetchFeed() {
             const res = await fetch('/api/posts');
             feed = await res.json();
@@ -236,8 +251,7 @@
                     <div class="post-content">${post.content}</div>
                     <div style="font-size:0.8rem; color:var(--accent); margin-bottom:1rem;">${post.book_reference || ''}</div>
                     <div class="post-actions">
-                        <span onclick="reactToPost('${post.id}')">💡 Like</span>
-                        <span>💬 Reply</span>
+                        <span onclick="reactToPost('${post.id}')">💡 ${post.reaction_count || 0} Likes</span>
                     </div>
                 `;
                 container.appendChild(div);
@@ -265,19 +279,25 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({post_id: postId, type: 'like'})
             });
-            alert("Reaction recorded in database!");
+            fetchFeed(); // Refresh to show updated count
         }
 
-        // --- READER LOGIC ---
+        // --- READER ---
         async function fetchBooks() {
             const res = await fetch('/api/books');
             const books = await res.json();
             const select = document.getElementById('bookSelect');
+            const planSelect = document.getElementById('planBookSelect');
             books.forEach(b => {
                 const opt = document.createElement('option');
                 opt.value = b.name;
                 opt.textContent = b.name;
                 select.appendChild(opt);
+                
+                const planOpt = document.createElement('option');
+                planOpt.value = b.name;
+                planOpt.textContent = b.name;
+                planSelect.appendChild(planOpt);
             });
             loadBook();
         }
@@ -307,6 +327,15 @@
             const container = document.getElementById('readerContent');
             container.innerHTML = '';
 
+            const isCompleted = completedChapters.includes(`${document.getElementById('bookSelect').value}_${chapter}`);
+
+            const completeBtn = document.createElement('button');
+            completeBtn.className = 'mark-btn';
+            completeBtn.textContent = isCompleted ? "✅ Chapter Read" : "Mark Chapter as Read";
+            completeBtn.style.marginBottom = "2rem";
+            completeBtn.onclick = () => markChapterRead(document.getElementById('bookSelect').value, chapter);
+            container.appendChild(completeBtn);
+
             verses.forEach(v => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'verse-wrapper';
@@ -325,6 +354,15 @@
                 wrapper.appendChild(div);
                 container.appendChild(wrapper);
             });
+        }
+
+        function markChapterRead(bookName, chapter) {
+            const key = `${bookName}_${chapter}`;
+            if (!completedChapters.includes(key)) {
+                completedChapters.push(key);
+                localStorage.setItem('folio_completed_chapters', JSON.stringify(completedChapters));
+                renderChapter();
+            }
         }
 
         function openWordCard(wordObj) {
@@ -346,14 +384,27 @@
             switchView('timeline', document.querySelector('.nav-menu .nav-item'));
         }
 
-        // --- LIBRARY LOGIC ---
+        // --- PLANNER ---
+        function updatePlanProgress() {
+            const bookName = document.getElementById('planBookSelect').value;
+            const totalChapters = [...new Set(currentBook ? currentBook.text_nodes.map(n => n.chapter) : [])].length;
+            const readChapters = completedChapters.filter(k => k.startsWith(bookName + '_')).length;
+            
+            const percent = totalChapters > 0 ? Math.round((readChapters / totalChapters) * 100) : 0;
+            document.getElementById('planStatus').textContent = `${bookName}: ${readChapters} / ${totalChapters} chapters read (${percent}%)`;
+        }
+
+        function populatePlanner() {
+            updatePlanProgress();
+        }
+
+        // --- LIBRARY ---
         async function fetchLibrary() {
             const res = await fetch('/api/library');
             library = await res.json();
             const container = document.getElementById('libraryContainer');
             container.innerHTML = '';
             
-            // Default Bible Card
             const bibleCard = document.createElement('div');
             bibleCard.className = 'card';
             bibleCard.innerHTML = `<h4>The Literal Bible (BSB)</h4><p style="color:var(--muted); font-size:0.85rem;">66 Books</p>`;
@@ -385,10 +436,31 @@
             }
         }
 
-        // --- PROFILE LOGIC ---
-        function updateProfile() {
-            const myPosts = feed.filter(p => p.folio_profiles && p.folio_profiles.username === 'Victor');
+        // --- PROFILE ---
+        async function fetchProfile() {
+            const res = await fetch('/api/profile');
+            const profile = await res.json();
+            
+            if (profile.username) {
+                document.getElementById('profileUsername').textContent = '@' + profile.username;
+                document.getElementById('profileBio').textContent = profile.bio || "No bio yet.";
+                document.getElementById('profileAvatar').textContent = profile.username[0];
+            }
+            
+            const myPosts = feed.filter(p => p.folio_profiles && p.folio_profiles.username === profile.username);
             document.getElementById('profilePostCount').textContent = myPosts.length;
+        }
+
+        function editProfile() {
+            const newName = prompt("Enter new username:", "Victor");
+            const newBio = prompt("Enter new bio:", "Reading the Bible. Building FOLIO.");
+            if (newName && newBio) {
+                fetch('/api/profile/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: newName, bio: newBio})
+                }).then(() => fetchProfile());
+            }
         }
 
         // Init
