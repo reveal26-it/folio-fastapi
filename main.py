@@ -25,10 +25,16 @@ class LibraryUpload(BaseModel):
     title: str
     author: str
     type: str
+    file_url: str = ""
 
 class ProfileUpdate(BaseModel):
     username: str
     bio: str
+
+class HighlightCreate(BaseModel):
+    verse_id: str
+    book_name: str
+    chapter: int
 
 @app.get("/")
 def read_root():
@@ -62,7 +68,6 @@ def get_book(book_name: str):
 def get_posts():
     if not supabase: return []
     try:
-        # Fetch posts, profiles, and count reactions
         response = supabase.table("folio_posts").select("*, folio_profiles(username)").order("created_at", desc=True).limit(50).execute()
         posts = response.data
         for p in posts:
@@ -114,7 +119,7 @@ def upload_to_library(item: LibraryUpload):
     if not supabase: return {"error": "DB not connected"}
     try:
         response = supabase.table("folio_library").insert({
-            "title": item.title, "author": item.author, "type": item.type, "file_url": "simulated_upload.pdf"
+            "title": item.title, "author": item.author, "type": item.type, "file_url": item.file_url
         }).execute()
         return response.data
     except Exception as e:
@@ -136,10 +141,36 @@ def get_profile():
 def update_profile(profile: ProfileUpdate):
     if not supabase: return {"error": "DB not connected"}
     try:
-        supabase.table("folio_profiles").upsert({
-            "username": profile.username,
-            "bio": profile.bio
+        existing = supabase.table("folio_profiles").select("id").eq("username", "Victor").execute()
+        if existing.data:
+            supabase.table("folio_profiles").update({
+                "username": profile.username, "bio": profile.bio
+            }).eq("username", "Victor").execute()
+        else:
+            supabase.table("folio_profiles").insert({
+                "username": profile.username, "bio": profile.bio
+            }).execute()
+        return {"status": "success"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# --- HIGHLIGHTS API ---
+@app.post("/api/highlights")
+def add_highlight(highlight: HighlightCreate):
+    if not supabase: return {"error": "DB not connected"}
+    try:
+        supabase.table("folio_highlights").insert({
+            "verse_id": highlight.verse_id, "book_name": highlight.book_name, "chapter": highlight.chapter
         }).execute()
         return {"status": "success"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/highlights/{book_name}/{chapter}")
+def get_highlights(book_name: str, chapter: int):
+    if not supabase: return []
+    try:
+        response = supabase.table("folio_highlights").select("verse_id").eq("book_name", book_name).eq("chapter", chapter).execute()
+        return [h["verse_id"] for h in response.data]
     except Exception as e:
         return {"error": str(e)}
