@@ -9,7 +9,6 @@ from pydantic import BaseModel
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-# Supabase Connection
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 supabase = create_client(url, key) if url and key else None
@@ -26,6 +25,10 @@ class LibraryUpload(BaseModel):
     title: str
     author: str
     type: str
+
+class ProfileUpdate(BaseModel):
+    username: str
+    bio: str
 
 @app.get("/")
 def read_root():
@@ -59,8 +62,13 @@ def get_book(book_name: str):
 def get_posts():
     if not supabase: return []
     try:
+        # Fetch posts, profiles, and count reactions
         response = supabase.table("folio_posts").select("*, folio_profiles(username)").order("created_at", desc=True).limit(50).execute()
-        return response.data
+        posts = response.data
+        for p in posts:
+            react_res = supabase.table("folio_reactions").select("id").eq("post_id", p["id"]).execute()
+            p["reaction_count"] = len(react_res.data)
+        return posts
     except Exception as e:
         return {"error": str(e)}
 
@@ -68,7 +76,6 @@ def get_posts():
 def create_post(post: PostCreate):
     if not supabase: return {"error": "DB not connected"}
     try:
-        # For demo purposes, we assign all posts to a default user 'Victor'
         user_res = supabase.table("folio_profiles").select("id").eq("username", "Victor").execute()
         if not user_res.data:
             new_user = supabase.table("folio_profiles").insert({"username": "Victor", "bio": "Founder of FOLIO"}).execute()
@@ -77,9 +84,7 @@ def create_post(post: PostCreate):
             user_id = user_res.data[0]["id"]
             
         response = supabase.table("folio_posts").insert({
-            "user_id": user_id,
-            "content": post.content,
-            "book_reference": post.book_reference
+            "user_id": user_id, "content": post.content, "book_reference": post.book_reference
         }).execute()
         return response.data
     except Exception as e:
@@ -109,11 +114,32 @@ def upload_to_library(item: LibraryUpload):
     if not supabase: return {"error": "DB not connected"}
     try:
         response = supabase.table("folio_library").insert({
-            "title": item.title,
-            "author": item.author,
-            "type": item.type,
-            "file_url": "simulated_upload.pdf"
+            "title": item.title, "author": item.author, "type": item.type, "file_url": "simulated_upload.pdf"
         }).execute()
         return response.data
+    except Exception as e:
+        return {"error": str(e)}
+
+# --- PROFILE API ---
+@app.get("/api/profile")
+def get_profile():
+    if not supabase: return {}
+    try:
+        response = supabase.table("folio_profiles").select("*").eq("username", "Victor").execute()
+        if response.data:
+            return response.data[0]
+        return {}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/profile/update")
+def update_profile(profile: ProfileUpdate):
+    if not supabase: return {"error": "DB not connected"}
+    try:
+        supabase.table("folio_profiles").upsert({
+            "username": profile.username,
+            "bio": profile.bio
+        }).execute()
+        return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
