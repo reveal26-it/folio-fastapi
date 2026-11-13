@@ -6,7 +6,6 @@ import os
 
 app = FastAPI()
 
-# Mount the root directory to serve index.html and JSON files
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 @app.get("/")
