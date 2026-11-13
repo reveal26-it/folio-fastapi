@@ -79,18 +79,21 @@
         .word { cursor: pointer; padding: 2px 3px; border-radius: 4px; transition: all 0.2s; display: inline-block; }
         .word:hover { background-color: var(--highlight); transform: translateY(-2px) scale(1.05); }
 
-        /* Library & Cards */
-        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
-        .card h4 { margin-top: 0; font-family: 'Space Grotesk'; }
+        /* Library */
+        .library-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; }
+        .card h4 { margin-top: 0; font-family: 'Space Grotesk'; margin-bottom: 0.5rem; }
+        .card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
 
         /* Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 100; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
         .modal-overlay.active { display: flex; opacity: 1; }
         .word-card { background: var(--surface); width: 500px; border-radius: 16px; padding: 2rem; transform: scale(0.8); transition: transform 0.3s; }
         .modal-overlay.active .word-card { transform: scale(1); }
-        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg-fallback); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--ink); margin-top: 1rem; margin-right: 0.5rem; }
-        .mark-btn:hover { border-color: var(--accent); }
+        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg-fallback); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--ink); margin-top: 1rem; margin-right: 0.5rem; transition: all 0.2s; }
+        .mark-btn:hover { border-color: var(--accent); background: var(--highlight); }
+        .btn-primary { background: var(--accent); color: white; border: none; }
         
         .tab-btn { padding: 0.5rem 1rem; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.85rem; border-bottom: 2px solid transparent; display: inline-block; margin-right: 1rem; }
         .tab-btn.active { color: var(--ink); border-bottom: 2px solid var(--accent); }
@@ -126,7 +129,7 @@
                 <textarea id="newPostContent" placeholder="Share a thought..." style="width:100%; border:none; background:transparent; font-family:'Lora'; font-size:1.1rem; color:var(--ink); outline:none; resize:none; min-height:80px;"></textarea>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
                     <input type="text" id="newPostRef" placeholder="Reference (e.g. John 3:16)" style="border:1px solid var(--border); padding:0.4rem; border-radius:4px; background:var(--bg-fallback); color:var(--ink); font-size:0.8rem;">
-                    <button class="mark-btn" onclick="createPost()">Publish</button>
+                    <button class="mark-btn btn-primary" onclick="createPost()">Publish</button>
                 </div>
             </div>
 
@@ -143,16 +146,32 @@
         <!-- LIBRARY VIEW -->
         <div id="libraryView" class="view">
             <div class="page-title">The Library</div>
-            <div class="chapter-title">Downloaded texts, academic curricula, and uploads.</div>
+            <div class="chapter-title">Upload your own texts, or download public domain books and academic curricula.</div>
             
-            <div class="card" style="margin-bottom:2rem; border-left: 4px solid var(--accent);">
-                <h4>Upload a Book or Curriculum</h4>
-                <input type="text" id="uploadTitle" placeholder="Book Title" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
-                <input type="text" id="uploadAuthor" placeholder="Author" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
-                <input type="file" id="uploadFile" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
-                <button class="mark-btn" onclick="uploadBook()">Submit to Library</button>
+            <div class="library-grid">
+                <!-- Upload Section -->
+                <div class="card" style="border-top: 4px solid var(--accent);">
+                    <h4>Upload a Text</h4>
+                    <p>Submit a book, paper, or curriculum for AI vetting.</p>
+                    <input type="text" id="uploadTitle" placeholder="Book Title" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                    <input type="text" id="uploadAuthor" placeholder="Author" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                    <input type="file" id="uploadFile" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                    <button class="mark-btn btn-primary" onclick="uploadBook()">Submit</button>
+                </div>
+
+                <!-- Download Section -->
+                <div class="card" style="border-top: 4px solid var(--ink);">
+                    <h4>Download a Text</h4>
+                    <p>Free access to classical literature and syllabi.</p>
+                    <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem;">
+                        <button class="mark-btn" onclick="alert('Downloading...')">📖 The Imitation of Christ (PDF)</button>
+                        <button class="mark-btn" onclick="alert('Downloading...')">📚 WAEC Mathematics Syllabus (PDF)</button>
+                        <button class="mark-btn" onclick="alert('Downloading...')">📜 The Constitution of Nigeria (PDF)</button>
+                    </div>
+                </div>
             </div>
 
+            <div class="chapter-title">Your Uploaded Texts</div>
             <div class="grid-cards" id="libraryContainer"></div>
         </div>
 
@@ -188,7 +207,7 @@
                 <h4>Edit Profile</h4>
                 <input type="text" id="editUsername" placeholder="Username" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
                 <input type="text" id="editBio" placeholder="Bio" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
-                <button class="mark-btn" onclick="saveProfile()">Save Changes</button>
+                <button class="mark-btn btn-primary" onclick="saveProfile()">Save Changes</button>
                 <button class="mark-btn" onclick="document.getElementById('editProfileCard').style.display='none'">Cancel</button>
             </div>
 
@@ -220,7 +239,7 @@
             </div>
 
             <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                <button class="mark-btn" onclick="quoteToTimeline()" style="background:var(--accent); color:white; border:none;">Quote to Timeline</button>
+                <button class="mark-btn btn-primary" onclick="quoteToTimeline()">Quote to Timeline</button>
                 <button class="mark-btn" onclick="closeModal()">Close</button>
             </div>
         </div>
@@ -410,11 +429,9 @@
             document.getElementById('strongsNum').textContent = `Strong's: ${wordObj.strongs || "N/A"}`;
             document.getElementById('parsingInfo').textContent = wordObj.parsing || "";
             
-            // Concordance
             const count = currentBook.word_tokens.filter(t => t.raw_word.toLowerCase() === wordObj.raw_word.toLowerCase()).length;
             document.getElementById('concordanceCount').textContent = count;
             
-            // Dictionary
             document.getElementById('dictDefinition').textContent = "Fetching...";
             fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordObj.raw_word}`)
                 .then(res => res.json())
@@ -426,7 +443,6 @@
                     }
                 }).catch(() => document.getElementById('dictDefinition').textContent = "Offline or API error.");
                 
-            // Reset to Context tab
             switchModalTab('context', document.querySelector('.tab-btn'));
         }
 
@@ -457,15 +473,16 @@
             const container = document.getElementById('libraryContainer');
             container.innerHTML = '';
             
+            // Default Bible Card
             const bibleCard = document.createElement('div');
             bibleCard.className = 'card';
-            bibleCard.innerHTML = `<h4>The Literal Bible (BSB)</h4><p style="color:var(--muted); font-size:0.85rem;">66 Books</p>`;
+            bibleCard.innerHTML = `<h4>The Literal Bible (BSB)</h4><p>66 Books</p><button class="mark-btn" onclick="switchView('reader', document.querySelector('.nav-menu .nav-item:nth-child(2)'))">Read</button>`;
             container.appendChild(bibleCard);
 
             library.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'card';
-                div.innerHTML = `<h4>${item.title}</h4><p style="color:var(--muted); font-size:0.85rem;">${item.author || 'Unknown'} • ${item.type}</p>`;
+                div.innerHTML = `<h4>${item.title}</h4><p>${item.author || 'Unknown'} • ${item.type}</p><button class="mark-btn">Read</button>`;
                 container.appendChild(div);
             });
         }
