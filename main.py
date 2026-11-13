@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from supabase import create_client, Client
@@ -31,10 +31,13 @@ class ProfileUpdate(BaseModel):
     username: str
     bio: str
 
-class HighlightCreate(BaseModel):
-    verse_id: str
+class MarkCreate(BaseModel):
     book_name: str
     chapter: int
+    verse_id: str
+    word_id: str = ""
+    mark_type: str = "highlight"
+    note: str = ""
 
 @app.get("/")
 def read_root():
@@ -87,7 +90,6 @@ def create_post(post: PostCreate):
             user_id = new_user.data[0]["id"]
         else:
             user_id = user_res.data[0]["id"]
-            
         response = supabase.table("folio_posts").insert({
             "user_id": user_id, "content": post.content, "book_reference": post.book_reference
         }).execute()
@@ -131,8 +133,7 @@ def get_profile():
     if not supabase: return {}
     try:
         response = supabase.table("folio_profiles").select("*").eq("username", "Victor").execute()
-        if response.data:
-            return response.data[0]
+        if response.data: return response.data[0]
         return {}
     except Exception as e:
         return {"error": str(e)}
@@ -143,34 +144,40 @@ def update_profile(profile: ProfileUpdate):
     try:
         existing = supabase.table("folio_profiles").select("id").eq("username", "Victor").execute()
         if existing.data:
-            supabase.table("folio_profiles").update({
-                "username": profile.username, "bio": profile.bio
-            }).eq("username", "Victor").execute()
+            supabase.table("folio_profiles").update({"username": profile.username, "bio": profile.bio}).eq("username", "Victor").execute()
         else:
-            supabase.table("folio_profiles").insert({
-                "username": profile.username, "bio": profile.bio
-            }).execute()
+            supabase.table("folio_profiles").insert({"username": profile.username, "bio": profile.bio}).execute()
         return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
 
-# --- HIGHLIGHTS API ---
-@app.post("/api/highlights")
-def add_highlight(highlight: HighlightCreate):
+# --- MARKS API (Highlights, Notes, Notables) ---
+@app.post("/api/marks")
+def add_mark(mark: MarkCreate):
     if not supabase: return {"error": "DB not connected"}
     try:
-        supabase.table("folio_highlights").insert({
-            "verse_id": highlight.verse_id, "book_name": highlight.book_name, "chapter": highlight.chapter
+        supabase.table("folio_marks").insert({
+            "book_name": mark.book_name, "chapter": mark.chapter, "verse_id": mark.verse_id,
+            "word_id": mark.word_id, "mark_type": mark.mark_type, "note": mark.note
         }).execute()
         return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/api/highlights/{book_name}/{chapter}")
-def get_highlights(book_name: str, chapter: int):
+@app.get("/api/marks/{book_name}/{chapter}")
+def get_marks(book_name: str, chapter: int):
     if not supabase: return []
     try:
-        response = supabase.table("folio_highlights").select("verse_id").eq("book_name", book_name).eq("chapter", chapter).execute()
-        return [h["verse_id"] for h in response.data]
+        response = supabase.table("folio_marks").select("*").eq("book_name", book_name).eq("chapter", chapter).execute()
+        return response.data
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.delete("/api/marks/{mark_id}")
+def delete_mark(mark_id: str):
+    if not supabase: return {"error": "DB not connected"}
+    try:
+        supabase.table("folio_marks").delete().eq("id", mark_id).execute()
+        return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
