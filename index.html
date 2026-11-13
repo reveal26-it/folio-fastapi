@@ -91,6 +91,9 @@
         .modal-overlay.active .word-card { transform: scale(1); }
         .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg-fallback); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--ink); margin-top: 1rem; margin-right: 0.5rem; }
         .mark-btn:hover { border-color: var(--accent); }
+        
+        .tab-btn { padding: 0.5rem 1rem; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.85rem; border-bottom: 2px solid transparent; display: inline-block; margin-right: 1rem; }
+        .tab-btn.active { color: var(--ink); border-bottom: 2px solid var(--accent); }
     </style>
 </head>
 <body data-theme="light">
@@ -143,9 +146,10 @@
             <div class="chapter-title">Downloaded texts, academic curricula, and uploads.</div>
             
             <div class="card" style="margin-bottom:2rem; border-left: 4px solid var(--accent);">
-                <h4>Upload a Text</h4>
+                <h4>Upload a Book or Curriculum</h4>
                 <input type="text" id="uploadTitle" placeholder="Book Title" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
                 <input type="text" id="uploadAuthor" placeholder="Author" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                <input type="file" id="uploadFile" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
                 <button class="mark-btn" onclick="uploadBook()">Submit to Library</button>
             </div>
 
@@ -176,25 +180,45 @@
                     <p id="profileBio" style="color:var(--muted); margin:0.5rem 0;">Loading...</p>
                     <div style="display:flex; gap:1.5rem; font-size:0.9rem; margin-top:1rem;">
                         <span><strong id="profilePostCount">0</strong> Posts</span>
-                        <span><strong>4</strong> Books Read</span>
                     </div>
                 </div>
-                <button class="mark-btn" onclick="editProfile()">Edit Profile</button>
             </div>
+
+            <div class="card" id="editProfileCard" style="display:none; border-left: 4px solid var(--accent);">
+                <h4>Edit Profile</h4>
+                <input type="text" id="editUsername" placeholder="Username" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                <input type="text" id="editBio" placeholder="Bio" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                <button class="mark-btn" onclick="saveProfile()">Save Changes</button>
+                <button class="mark-btn" onclick="document.getElementById('editProfileCard').style.display='none'">Cancel</button>
+            </div>
+
+            <button class="mark-btn" id="editBtn" onclick="showEditForm()">Edit Profile</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="wordModal">
         <div class="word-card">
             <h2 id="modalWordTitle">Word</h2>
-            <div class="tab-content active" style="display:block;">
+            
+            <div style="margin-bottom: 1rem;">
+                <span class="tab-btn active" onclick="switchModalTab('context', this)">Original</span>
+                <span class="tab-btn" onclick="switchModalTab('dictionary', this)">Dictionary</span>
+            </div>
+
+            <div id="modalContextTab" style="display:block;">
                 <div id="origWord" style="font-size:1.8rem; font-family:'Lora'; margin-bottom:0.5rem;"></div>
                 <div id="translitWord" style="color:var(--muted); margin-bottom:1rem;"></div>
                 <div style="background:var(--bg-fallback); padding:1rem; border-radius:8px;">
                     <span id="strongsNum" style="color:var(--accent); font-weight:600;"></span>
                     <div id="parsingInfo" style="color:var(--muted); font-style:italic;"></div>
                 </div>
+                <p style="margin-top: 1rem;"><strong>Concordance:</strong> Appears <span id="concordanceCount">0</span> times in this book.</p>
             </div>
+            
+            <div id="modalDictTab" style="display:none;">
+                <p id="dictDefinition" style="line-height:1.6;">Loading...</p>
+            </div>
+
             <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
                 <button class="mark-btn" onclick="quoteToTimeline()" style="background:var(--accent); color:white; border:none;">Quote to Timeline</button>
                 <button class="mark-btn" onclick="closeModal()">Close</button>
@@ -229,7 +253,19 @@
             if (viewName === 'planner') populatePlanner();
         }
 
-        // --- TIMELINE ---
+        function switchModalTab(tab, el) {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            if (tab === 'context') {
+                document.getElementById('modalContextTab').style.display = 'block';
+                document.getElementById('modalDictTab').style.display = 'none';
+            } else {
+                document.getElementById('modalContextTab').style.display = 'none';
+                document.getElementById('modalDictTab').style.display = 'block';
+            }
+        }
+
+        // --- SOCIAL ---
         async function fetchFeed() {
             const res = await fetch('/api/posts');
             feed = await res.json();
@@ -279,7 +315,7 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({post_id: postId, type: 'like'})
             });
-            fetchFeed(); // Refresh to show updated count
+            fetchFeed();
         }
 
         // --- READER ---
@@ -328,7 +364,6 @@
             container.innerHTML = '';
 
             const isCompleted = completedChapters.includes(`${document.getElementById('bookSelect').value}_${chapter}`);
-
             const completeBtn = document.createElement('button');
             completeBtn.className = 'mark-btn';
             completeBtn.textContent = isCompleted ? "✅ Chapter Read" : "Mark Chapter as Read";
@@ -369,10 +404,30 @@
             currentWord = wordObj;
             document.getElementById('modalWordTitle').textContent = wordObj.raw_word;
             document.getElementById('wordModal').classList.add('active');
+            
             document.getElementById('origWord').textContent = wordObj.hebrew_greek || "";
             document.getElementById('translitWord').textContent = wordObj.transliteration || "";
             document.getElementById('strongsNum').textContent = `Strong's: ${wordObj.strongs || "N/A"}`;
             document.getElementById('parsingInfo').textContent = wordObj.parsing || "";
+            
+            // Concordance
+            const count = currentBook.word_tokens.filter(t => t.raw_word.toLowerCase() === wordObj.raw_word.toLowerCase()).length;
+            document.getElementById('concordanceCount').textContent = count;
+            
+            // Dictionary
+            document.getElementById('dictDefinition').textContent = "Fetching...";
+            fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordObj.raw_word}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data[0] && data[0].meanings) {
+                        document.getElementById('dictDefinition').textContent = data[0].meanings[0].definitions[0].definition;
+                    } else {
+                        document.getElementById('dictDefinition').textContent = "Definition not found.";
+                    }
+                }).catch(() => document.getElementById('dictDefinition').textContent = "Offline or API error.");
+                
+            // Reset to Context tab
+            switchModalTab('context', document.querySelector('.tab-btn'));
         }
 
         function closeModal() { document.getElementById('wordModal').classList.remove('active'); }
@@ -389,14 +444,11 @@
             const bookName = document.getElementById('planBookSelect').value;
             const totalChapters = [...new Set(currentBook ? currentBook.text_nodes.map(n => n.chapter) : [])].length;
             const readChapters = completedChapters.filter(k => k.startsWith(bookName + '_')).length;
-            
             const percent = totalChapters > 0 ? Math.round((readChapters / totalChapters) * 100) : 0;
             document.getElementById('planStatus').textContent = `${bookName}: ${readChapters} / ${totalChapters} chapters read (${percent}%)`;
         }
 
-        function populatePlanner() {
-            updatePlanProgress();
-        }
+        function populatePlanner() { updatePlanProgress(); }
 
         // --- LIBRARY ---
         async function fetchLibrary() {
@@ -413,10 +465,7 @@
             library.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'card';
-                div.innerHTML = `
-                    <h4>${item.title}</h4>
-                    <p style="color:var(--muted); font-size:0.85rem;">${item.author || 'Unknown'} • ${item.type}</p>
-                `;
+                div.innerHTML = `<h4>${item.title}</h4><p style="color:var(--muted); font-size:0.85rem;">${item.author || 'Unknown'} • ${item.type}</p>`;
                 container.appendChild(div);
             });
         }
@@ -424,15 +473,21 @@
         async function uploadBook() {
             const title = document.getElementById('uploadTitle').value;
             const author = document.getElementById('uploadAuthor').value;
-            if (title) {
+            const fileInput = document.getElementById('uploadFile');
+            
+            if (title && fileInput.files.length > 0) {
+                const fileName = fileInput.files[0].name;
                 await fetch('/api/library/upload', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({title: title, author: author, type: 'Book'})
+                    body: JSON.stringify({title: title, author: author, type: 'Book', file_url: fileName})
                 });
                 document.getElementById('uploadTitle').value = '';
                 document.getElementById('uploadAuthor').value = '';
+                document.getElementById('uploadFile').value = '';
                 fetchLibrary();
+            } else {
+                alert("Please provide a title and select a file.");
             }
         }
 
@@ -444,22 +499,34 @@
             if (profile.username) {
                 document.getElementById('profileUsername').textContent = '@' + profile.username;
                 document.getElementById('profileBio').textContent = profile.bio || "No bio yet.";
-                document.getElementById('profileAvatar').textContent = profile.username[0];
+                document.getElementById('profileAvatar').textContent = profile.username[0].toUpperCase();
+                document.getElementById('editUsername').value = profile.username;
+                document.getElementById('editBio').value = profile.bio || "";
             }
             
-            const myPosts = feed.filter(p => p.folio_profiles && p.folio_profiles.username === profile.username);
+            const myPosts = feed.filter(p => p.folio_profiles && p.folio_profiles.username === (profile.username || "Victor"));
             document.getElementById('profilePostCount').textContent = myPosts.length;
         }
 
-        function editProfile() {
-            const newName = prompt("Enter new username:", "Victor");
-            const newBio = prompt("Enter new bio:", "Reading the Bible. Building FOLIO.");
-            if (newName && newBio) {
-                fetch('/api/profile/update', {
+        function showEditForm() {
+            document.getElementById('editProfileCard').style.display = 'block';
+            document.getElementById('editBtn').style.display = 'none';
+        }
+
+        async function saveProfile() {
+            const newName = document.getElementById('editUsername').value;
+            const newBio = document.getElementById('editBio').value;
+            
+            if (newName) {
+                await fetch('/api/profile/update', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({username: newName, bio: newBio})
-                }).then(() => fetchProfile());
+                });
+                document.getElementById('editProfileCard').style.display = 'none';
+                document.getElementById('editBtn').style.display = 'block';
+                fetchProfile();
+                fetchFeed();
             }
         }
 
