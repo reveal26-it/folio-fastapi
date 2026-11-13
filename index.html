@@ -74,7 +74,7 @@
 
         /* Reader */
         .verse-wrapper { position: relative; display: flex; margin-bottom: 2rem; max-width: 750px; }
-        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; padding: 4px 8px; border-radius: 6px; }
+        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; padding: 4px 8px; border-radius: 6px; transition: background 0.3s; }
         .v-num { font-size: 0.75rem; color: var(--accent); font-weight: 600; vertical-align: super; margin-right: 12px; }
         .word { cursor: pointer; padding: 2px 3px; border-radius: 4px; transition: all 0.2s; display: inline-block; }
         .word:hover { background-color: var(--highlight); transform: translateY(-2px) scale(1.05); }
@@ -97,6 +97,10 @@
         
         .tab-btn { padding: 0.5rem 1rem; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.85rem; border-bottom: 2px solid transparent; display: inline-block; margin-right: 1rem; }
         .tab-btn.active { color: var(--ink); border-bottom: 2px solid var(--accent); }
+
+        /* Margin Rail */
+        #marginRail { position: fixed; right: 2rem; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .rail-dot { width: 8px; height: 8px; background-color: var(--accent); border-radius: 50%; opacity: 0.6; }
     </style>
 </head>
 <body data-theme="light">
@@ -149,7 +153,6 @@
             <div class="chapter-title">Upload your own texts, or download public domain books and academic curricula.</div>
             
             <div class="library-grid">
-                <!-- Upload Section -->
                 <div class="card" style="border-top: 4px solid var(--accent);">
                     <h4>Upload a Text</h4>
                     <p>Submit a book, paper, or curriculum for AI vetting.</p>
@@ -159,7 +162,6 @@
                     <button class="mark-btn btn-primary" onclick="uploadBook()">Submit</button>
                 </div>
 
-                <!-- Download Section -->
                 <div class="card" style="border-top: 4px solid var(--ink);">
                     <h4>Download a Text</h4>
                     <p>Free access to classical literature and syllabi.</p>
@@ -214,6 +216,8 @@
             <button class="mark-btn" id="editBtn" onclick="showEditForm()">Edit Profile</button>
         </div>
     </div>
+
+    <div id="marginRail"></div>
 
     <div class="modal-overlay" id="wordModal">
         <div class="word-card">
@@ -375,26 +379,54 @@
             renderChapter();
         }
 
-        function renderChapter() {
+        async function renderChapter() {
             const chapter = parseInt(document.getElementById('chapterSelect').value);
+            const bookName = document.getElementById('bookSelect').value;
             document.getElementById('chapterTitleDisplay').textContent = `Chapter ${chapter}`;
+            
+            const resH = await fetch(`/api/highlights/${bookName}/${chapter}`);
+            const savedHighlights = await resH.json();
+            
             const verses = currentBook.text_nodes.filter(n => n.chapter === chapter);
             const container = document.getElementById('readerContent');
             container.innerHTML = '';
+            const rail = document.getElementById('marginRail');
+            rail.innerHTML = '';
 
-            const isCompleted = completedChapters.includes(`${document.getElementById('bookSelect').value}_${chapter}`);
+            const isCompleted = completedChapters.includes(`${bookName}_${chapter}`);
             const completeBtn = document.createElement('button');
             completeBtn.className = 'mark-btn';
             completeBtn.textContent = isCompleted ? "✅ Chapter Read" : "Mark Chapter as Read";
             completeBtn.style.marginBottom = "2rem";
-            completeBtn.onclick = () => markChapterRead(document.getElementById('bookSelect').value, chapter);
+            completeBtn.onclick = () => markChapterRead(bookName, chapter);
             container.appendChild(completeBtn);
 
             verses.forEach(v => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'verse-wrapper';
+                
+                const highlightBtn = document.createElement('span');
+                highlightBtn.innerHTML = '✎';
+                highlightBtn.style.position = 'absolute';
+                highlightBtn.style.left = '-30px';
+                highlightBtn.style.top = '10px';
+                highlightBtn.style.cursor = 'pointer';
+                highlightBtn.style.color = 'var(--accent)';
+                highlightBtn.style.opacity = '0.5';
+                highlightBtn.title = "Highlight Verse";
+                highlightBtn.onclick = () => saveHighlight(v.node_id, bookName, chapter);
+                wrapper.appendChild(highlightBtn);
+
                 const div = document.createElement('div');
                 div.className = 'verse';
+                
+                if (savedHighlights.includes(String(v.node_id))) {
+                    div.style.backgroundColor = 'var(--highlight)';
+                    const dot = document.createElement('div');
+                    dot.className = 'rail-dot';
+                    rail.appendChild(dot);
+                }
+
                 div.innerHTML = `<span class="v-num">${v.verse}</span>`;
                 
                 const words = currentBook.word_tokens.filter(t => t.node_id === v.node_id);
@@ -408,6 +440,15 @@
                 wrapper.appendChild(div);
                 container.appendChild(wrapper);
             });
+        }
+
+        async function saveHighlight(verseId, bookName, chapter) {
+            await fetch('/api/highlights', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({verse_id: String(verseId), book_name: bookName, chapter: chapter})
+            });
+            renderChapter();
         }
 
         function markChapterRead(bookName, chapter) {
@@ -473,7 +514,6 @@
             const container = document.getElementById('libraryContainer');
             container.innerHTML = '';
             
-            // Default Bible Card
             const bibleCard = document.createElement('div');
             bibleCard.className = 'card';
             bibleCard.innerHTML = `<h4>The Literal Bible (BSB)</h4><p>66 Books</p><button class="mark-btn" onclick="switchView('reader', document.querySelector('.nav-menu .nav-item:nth-child(2)'))">Read</button>`;
