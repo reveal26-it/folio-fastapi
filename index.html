@@ -22,9 +22,10 @@
             margin: 0; 
             display: flex; 
             height: 100vh;
+            overflow: hidden;
         }
 
-        /* The Sidebar */
+        /* Sidebar */
         .sidebar { 
             width: 280px; 
             padding: 2rem; 
@@ -32,7 +33,8 @@
             background-color: var(--surface);
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 2rem;
+            z-index: 10;
         }
         
         .logo {
@@ -41,109 +43,153 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             color: var(--ink);
-            margin-bottom: 1rem;
         }
 
-        label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-            color: var(--muted);
-            margin-bottom: 0.5rem;
-            display: block;
-        }
+        .nav-menu { display: flex; flex-direction: column; gap: 0.5rem; }
+        .nav-item { padding: 0.75rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--muted); transition: all 0.2s; }
+        .nav-item:hover { background-color: var(--bg); color: var(--ink); }
+        .nav-item.active { background-color: var(--ink); color: white; }
 
-        select { 
-            width: 100%; 
-            padding: 0.75rem; 
-            border: 1px solid #E0E0E0;
-            border-radius: 6px;
-            background-color: var(--bg);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
-            color: var(--ink);
-            outline: none;
-            cursor: pointer;
-        }
-        select:focus { border-color: var(--accent); }
+        .nav-controls { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+        label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--muted); margin-bottom: 0.5rem; display: block; }
+        select { width: 100%; padding: 0.75rem; border: 1px solid #E0E0E0; border-radius: 6px; background-color: var(--bg); font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--ink); outline: none; cursor: pointer; }
 
-        /* The Reader Area */
-        .main { 
-            flex: 1; 
-            padding: 4rem 6rem; 
-            overflow-y: auto;
-        }
+        /* Main Content */
+        .main { flex: 1; padding: 4rem 6rem; overflow-y: auto; position: relative; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+        .chapter-title { font-size: 1rem; color: var(--muted); margin-bottom: 3rem; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 1rem; }
+
+        /* Reader Text */
+        .verse { font-family: 'Georgia', serif; font-size: 1.3rem; line-height: 2; margin-bottom: 2rem; max-width: 800px; }
+        .v-num { font-size: 0.7rem; color: var(--accent); font-family: 'Inter', sans-serif; font-weight: 600; vertical-align: super; margin-right: 12px; }
+        .word { cursor: pointer; padding: 2px 2px; border-radius: 4px; transition: all 0.2s ease; }
+        .word:hover { background-color: var(--accent); color: white; }
+        .word.highlighted { background-color: #FFF3A3; }
+        .word.notable { border-bottom: 2px solid var(--accent); font-weight: bold; }
+
+        /* Margin Rail */
+        .margin-rail { position: fixed; right: 0; top: 0; width: 40px; height: 100vh; border-left: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 4rem; gap: 1rem; background: rgba(244, 241, 234, 0.8); }
+        .rail-icon { width: 12px; height: 12px; background-color: var(--accent); border-radius: 50%; cursor: pointer; }
+
+        /* Word Card Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .word-card { background: var(--surface); width: 400px; border-radius: 12px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .word-card h2 { font-family: 'Space Grotesk', sans-serif; margin-top: 0; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
         
-        .book-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
-        }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #eee; }
+        .tab { padding: 0.5rem; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+        .tab.active { color: var(--ink); border-bottom: 2px solid var(--ink); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .chapter-title {
-            font-size: 1rem;
-            color: var(--muted);
-            margin-bottom: 3rem;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            padding-bottom: 1rem;
-        }
+        .mark-btn { padding: 0.5rem 1rem; border: 1px solid #ddd; background: var(--bg); border-radius: 6px; cursor: pointer; font-family: 'Inter'; font-size: 0.8rem; margin-right: 0.5rem; margin-top: 1rem; }
+        .mark-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+        .note-input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; margin-top: 1rem; font-family: 'Inter'; }
 
-        .verse { 
-            font-family: 'Georgia', serif;
-            font-size: 1.3rem; 
-            line-height: 2; 
-            margin-bottom: 2rem; 
-            max-width: 800px;
-        }
-
-        .v-num { 
-            font-size: 0.7rem; 
-            color: var(--accent); 
-            font-family: 'Inter', sans-serif; 
-            font-weight: 600; 
-            vertical-align: super; 
-            margin-right: 12px; 
-        }
-
-        .word { 
-            cursor: pointer; 
-            padding: 2px 2px; 
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-        
-        .word:hover { 
-            background-color: var(--accent); 
-            color: white; 
-        }
+        .book-card { background-color: var(--surface); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .book-card h4 { margin: 0 0 0.5rem 0; font-family: 'Space Grotesk', sans-serif; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <div class="logo">FOLIO</div>
-        
-        <div>
-            <label>Select Book</label>
-            <select id="bookSelect" onchange="loadBook()"></select>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="switchView('reader', this)">📖 The Reader</div>
+            <div class="nav-item" onclick="switchView('library', this)">📚 The Library</div>
+            <div class="nav-item" onclick="switchView('planner', this)">🗓️ The Planner</div>
         </div>
-        
-        <div>
-            <label>Select Chapter</label>
-            <select id="chapterSelect" onchange="renderChapter()"></select>
+        <div class="nav-controls" id="readerControls">
+            <div><label>Select Book</label><select id="bookSelect" onchange="loadBook()"></select></div>
+            <div><label>Select Chapter</label><select id="chapterSelect" onchange="renderChapter()"></select></div>
+            <div><label>Reading Mode</label><select id="modeSelect"><option>Online</option><option>Offline</option></select></div>
         </div>
     </div>
     
     <div class="main">
-        <div class="book-title" id="bookTitleDisplay">The Reader</div>
-        <div class="chapter-title" id="chapterTitleDisplay">Select a book to begin</div>
-        <div id="readerContent"></div>
+        <div id="readerView" class="view active">
+            <div class="page-title" id="bookTitleDisplay">The Reader</div>
+            <div class="chapter-title" id="chapterTitleDisplay">Select a book to begin</div>
+            <div id="readerContent"></div>
+        </div>
+
+        <div id="libraryView" class="view">
+            <div class="page-title">The Library</div>
+            <div class="chapter-title">Downloaded Texts</div>
+            <div class="book-card"><h4>The Literal Bible (BSB Interlinear)</h4><p>66 Books • Fully indexed at the word level.</p></div>
+            
+            <div class="chapter-title" style="margin-top: 3rem;">Publisher Submission</div>
+            <div class="book-card">
+                <input type="text" id="submitTitle" placeholder="Book Title" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="text" id="submitAuthor" placeholder="Author" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+                <button class="mark-btn" onclick="submitBook()">Submit for AI Vetting</button>
+                <p id="vettingResult" style="color: var(--accent); font-weight: 600;"></p>
+            </div>
+        </div>
+
+        <div id="plannerView" class="view">
+            <div class="page-title">The Planner</div>
+            <div class="chapter-title">Read at your own pace.</div>
+            <div class="book-card">
+                <h4>Set Your Goal</h4>
+                <label>Days to finish</label>
+                <input type="number" id="goalDays" value="30" style="padding: 0.5rem; margin-bottom: 1rem;">
+                <button class="mark-btn" onclick="calcPlan()">Calculate Schedule</button>
+                <p id="planResult" style="margin-top: 1rem; font-weight: 600;"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="margin-rail" id="marginRail"></div>
+
+    <div class="modal-overlay" id="wordModal">
+        <div class="word-card">
+            <h2 id="modalWordTitle">Word</h2>
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('context', this)">Context</div>
+                <div class="tab" onclick="switchTab('dictionary', this)">Dictionary</div>
+                <div class="tab" onclick="switchTab('readers', this)">Readers</div>
+            </div>
+            <div id="contextTab" class="tab-content active">
+                <p><strong>Concordance:</strong> <span id="concordanceCount">0</span> occurrences in this book.</p>
+            </div>
+            <div id="dictionaryTab" class="tab-content">
+                <p id="dictionaryDefinition">Loading definition...</p>
+            </div>
+            <div id="readersTab" class="tab-content">
+                <p style="color: var(--muted);">Community notes are only available online.</p>
+            </div>
+            
+            <div style="margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <input type="text" class="note-input" id="noteInput" placeholder="Add a private note...">
+                <button class="mark-btn" onclick="markWord('highlight')">Highlight</button>
+                <button class="mark-btn" onclick="markWord('notable')">Notable</button>
+                <button class="mark-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
     </div>
 
     <script>
         let currentBook = null;
+        let currentWordId = null;
+        let marks = JSON.parse(localStorage.getItem('folio_marks')) || {};
+
+        function switchView(viewName, element) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(viewName + 'View').classList.add('active');
+            element.classList.add('active');
+            document.getElementById('readerControls').style.display = (viewName === 'reader') ? 'flex' : 'none';
+        }
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
 
         async function fetchBooks() {
             const res = await fetch('/api/books');
@@ -162,7 +208,6 @@
             const bookName = document.getElementById('bookSelect').value;
             const res = await fetch(`/api/book/${bookName}`);
             currentBook = await res.json();
-            
             document.getElementById('bookTitleDisplay').textContent = bookName;
             
             const chapters = [...new Set(currentBook.text_nodes.map(n => n.chapter))].sort((a,b) => a-b);
@@ -180,10 +225,11 @@
         function renderChapter() {
             const chapter = parseInt(document.getElementById('chapterSelect').value);
             document.getElementById('chapterTitleDisplay').textContent = `Chapter ${chapter}`;
-            
             const verses = currentBook.text_nodes.filter(n => n.chapter === chapter);
             const container = document.getElementById('readerContent');
             container.innerHTML = '';
+            const rail = document.getElementById('marginRail');
+            rail.innerHTML = '';
 
             verses.forEach(v => {
                 const div = document.createElement('div');
@@ -195,10 +241,78 @@
                     const span = document.createElement('span');
                     span.className = 'word';
                     span.textContent = w.raw_word + ' ';
+                    span.onclick = () => openWordCard(w);
+                    
+                    if (marks[w.word_id] && marks[w.word_id].type === 'highlight') span.classList.add('highlighted');
+                    if (marks[w.word_id] && marks[w.word_id].type === 'notable') span.classList.add('notable');
+                    
                     div.appendChild(span);
                 });
                 container.appendChild(div);
             });
+
+            // Render Margin Rail
+            Object.keys(marks).forEach(id => {
+                const mark = marks[id];
+                if (mark.book === document.getElementById('bookSelect').value && mark.chapter === chapter) {
+                    const dot = document.createElement('div');
+                    dot.className = 'rail-icon';
+                    dot.title = `Mark on word ${mark.word}`;
+                    rail.appendChild(dot);
+                }
+            });
+        }
+
+        function openWordCard(wordObj) {
+            currentWordId = wordObj.word_id;
+            document.getElementById('modalWordTitle').textContent = wordObj.raw_word;
+            document.getElementById('wordModal').classList.add('active');
+            
+            // Context Tab
+            const count = currentBook.word_tokens.filter(t => t.raw_word.toLowerCase() === wordObj.raw_word.toLowerCase()).length;
+            document.getElementById('concordanceCount').textContent = count;
+            
+            // Dictionary Tab
+            document.getElementById('dictionaryDefinition').textContent = "Fetching...";
+            fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordObj.raw_word}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data[0] && data[0].meanings) {
+                        document.getElementById('dictionaryDefinition').textContent = data[0].meanings[0].definitions[0].definition;
+                    } else {
+                        document.getElementById('dictionaryDefinition').textContent = "Definition not found.";
+                    }
+                }).catch(() => document.getElementById('dictionaryDefinition').textContent = "Offline or API error.");
+        }
+
+        function closeModal() { document.getElementById('wordModal').classList.remove('active'); }
+
+        function markWord(type) {
+            const note = document.getElementById('noteInput').value;
+            marks[currentWordId] = {
+                type: type,
+                note: note,
+                book: document.getElementById('bookSelect').value,
+                chapter: parseInt(document.getElementById('chapterSelect').value),
+                word: document.getElementById('modalWordTitle').textContent
+            };
+            localStorage.setItem('folio_marks', JSON.stringify(marks));
+            renderChapter();
+            closeModal();
+        }
+
+        function calcPlan() {
+            const days = document.getElementById('goalDays').value;
+            const words = currentBook.word_tokens.length;
+            const mins = words / (days * 180);
+            document.getElementById('planResult').textContent = `At 180 WPM, you need ${mins.toFixed(1)} minutes per day to finish in ${days} days.`;
+        }
+
+        function submitBook() {
+            const title = document.getElementById('submitTitle').value;
+            if (title) {
+                document.getElementById('vettingResult').textContent = "AI Verdict: ALLOWED. (Simulation)";
+            }
         }
 
         fetchBooks();
