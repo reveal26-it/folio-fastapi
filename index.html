@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FOLIO</title>
+    <style>
+        body { background-color: #F4F1EA; color: #1F1D1A; font-family: 'Georgia', serif; margin: 0; display: flex; }
+        .sidebar { width: 250px; padding: 2rem; border-right: 1px solid #C9A227; height: 100vh; box-sizing: border-box; }
+        .main { flex: 1; padding: 4rem; max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 3rem; text-align: center; margin-bottom: 0; }
+        h2 { font-size: 1.5rem; border-bottom: 1px solid #C9A227; padding-bottom: 0.5rem; }
+        select { width: 100%; padding: 0.5rem; margin-bottom: 1rem; font-family: 'Arial'; }
+        .verse { font-size: 1.4rem; line-height: 2.2; margin-bottom: 2rem; }
+        .v-num { font-size: 0.8rem; color: #C9A227; font-family: 'Arial'; font-weight: bold; vertical-align: super; margin-right: 8px; }
+        .word { cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+        .word:hover { background-color: #C9A227; color: white; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3>FOLIO</h3>
+        <label>Select Book</label>
+        <select id="bookSelect" onchange="loadBook()"></select>
+        <label>Select Chapter</label>
+        <select id="chapterSelect" onchange="renderChapter()"></select>
+    </div>
+    <div class="main">
+        <h1>The Reader</h1>
+        <div id="readerContent"></div>
+    </div>
+
+    <script>
+        let currentBook = null;
+
+        async function fetchBooks() {
+            const res = await fetch('/api/books');
+            const books = await res.json();
+            const select = document.getElementById('bookSelect');
+            books.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.name;
+                opt.textContent = b.name;
+                select.appendChild(opt);
+            });
+            loadBook();
+        }
+
+        async function loadBook() {
+            const bookName = document.getElementById('bookSelect').value;
+            const res = await fetch(`/api/book/${bookName}`);
+            currentBook = await res.json();
+            
+            const chapters = [...new Set(currentBook.text_nodes.map(n => n.chapter))].sort((a,b) => a-b);
+            const select = document.getElementById('chapterSelect');
+            select.innerHTML = '';
+            chapters.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+            renderChapter();
+        }
+
+        function renderChapter() {
+            const chapter = parseInt(document.getElementById('chapterSelect').value);
+            const verses = currentBook.text_nodes.filter(n => n.chapter === chapter);
+            const container = document.getElementById('readerContent');
+            container.innerHTML = '';
+
+            verses.forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'verse';
+                div.innerHTML = `<span class="v-num">${v.verse}</span>`;
+                
+                const words = currentBook.word_tokens.filter(t => t.node_id === v.node_id);
+                words.forEach(w => {
+                    const span = document.createElement('span');
+                    span.className = 'word';
+                    span.textContent = w.raw_word + ' ';
+                    div.appendChild(span);
+                });
+                container.appendChild(div);
+            });
+        }
+
+        fetchBooks();
+    </script>
+</body>
+</html>
