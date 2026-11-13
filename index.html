@@ -1,31 +1,144 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>FOLIO</title>
     <style>
-        body { background-color: #F4F1EA; color: #1F1D1A; font-family: 'Georgia', serif; margin: 0; display: flex; }
-        .sidebar { width: 250px; padding: 2rem; border-right: 1px solid #C9A227; height: 100vh; box-sizing: border-box; }
-        .main { flex: 1; padding: 4rem; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 3rem; text-align: center; margin-bottom: 0; }
-        h2 { font-size: 1.5rem; border-bottom: 1px solid #C9A227; padding-bottom: 0.5rem; }
-        select { width: 100%; padding: 0.5rem; margin-bottom: 1rem; font-family: 'Arial'; }
-        .verse { font-size: 1.4rem; line-height: 2.2; margin-bottom: 2rem; }
-        .v-num { font-size: 0.8rem; color: #C9A227; font-family: 'Arial'; font-weight: bold; vertical-align: super; margin-right: 8px; }
-        .word { cursor: pointer; padding: 2px 4px; border-radius: 4px; }
-        .word:hover { background-color: #C9A227; color: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap');
+
+        :root {
+            --bg: #F4F1EA;
+            --ink: #1F1D1A;
+            --accent: #C9A227;
+            --muted: #888888;
+            --surface: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--ink); 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh;
+        }
+
+        /* The Sidebar */
+        .sidebar { 
+            width: 280px; 
+            padding: 2rem; 
+            border-right: 1px solid rgba(0,0,0,0.05); 
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--ink);
+            margin-bottom: 1rem;
+        }
+
+        label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        select { 
+            width: 100%; 
+            padding: 0.75rem; 
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            background-color: var(--bg);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            outline: none;
+            cursor: pointer;
+        }
+        select:focus { border-color: var(--accent); }
+
+        /* The Reader Area */
+        .main { 
+            flex: 1; 
+            padding: 4rem 6rem; 
+            overflow-y: auto;
+        }
+        
+        .book-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .chapter-title {
+            font-size: 1rem;
+            color: var(--muted);
+            margin-bottom: 3rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 1rem;
+        }
+
+        .verse { 
+            font-family: 'Georgia', serif;
+            font-size: 1.3rem; 
+            line-height: 2; 
+            margin-bottom: 2rem; 
+            max-width: 800px;
+        }
+
+        .v-num { 
+            font-size: 0.7rem; 
+            color: var(--accent); 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 600; 
+            vertical-align: super; 
+            margin-right: 12px; 
+        }
+
+        .word { 
+            cursor: pointer; 
+            padding: 2px 2px; 
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .word:hover { 
+            background-color: var(--accent); 
+            color: white; 
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h3>FOLIO</h3>
-        <label>Select Book</label>
-        <select id="bookSelect" onchange="loadBook()"></select>
-        <label>Select Chapter</label>
-        <select id="chapterSelect" onchange="renderChapter()"></select>
+        <div class="logo">FOLIO</div>
+        
+        <div>
+            <label>Select Book</label>
+            <select id="bookSelect" onchange="loadBook()"></select>
+        </div>
+        
+        <div>
+            <label>Select Chapter</label>
+            <select id="chapterSelect" onchange="renderChapter()"></select>
+        </div>
     </div>
+    
     <div class="main">
-        <h1>The Reader</h1>
+        <div class="book-title" id="bookTitleDisplay">The Reader</div>
+        <div class="chapter-title" id="chapterTitleDisplay">Select a book to begin</div>
         <div id="readerContent"></div>
     </div>
 
@@ -50,13 +163,15 @@
             const res = await fetch(`/api/book/${bookName}`);
             currentBook = await res.json();
             
+            document.getElementById('bookTitleDisplay').textContent = bookName;
+            
             const chapters = [...new Set(currentBook.text_nodes.map(n => n.chapter))].sort((a,b) => a-b);
             const select = document.getElementById('chapterSelect');
             select.innerHTML = '';
             chapters.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c;
-                opt.textContent = c;
+                opt.textContent = `Chapter ${c}`;
                 select.appendChild(opt);
             });
             renderChapter();
@@ -64,6 +179,8 @@
 
         function renderChapter() {
             const chapter = parseInt(document.getElementById('chapterSelect').value);
+            document.getElementById('chapterTitleDisplay').textContent = `Chapter ${chapter}`;
+            
             const verses = currentBook.text_nodes.filter(n => n.chapter === chapter);
             const container = document.getElementById('readerContent');
             container.innerHTML = '';
