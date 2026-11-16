@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FOLIO App</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+        :root {
+            --bg-fallback: #F4F1EA;
+            --bg-gradient: radial-gradient(circle at 50% 10%, #FFFFFF 0%, #EBE5D9 100%);
+            --ink: #2A2826;
+            --accent: #C9A227;
+            --muted: #8A877E;
+            --surface: #FFFFFF;
+            --border: rgba(0,0,0,0.06);
+            --highlight: #F1E8C9;
+            --sidebar-bg: rgba(255, 255, 255, 0.4);
+        }
+
+        [data-theme="dark"] {
+            --bg-fallback: #121212;
+            --bg-gradient: radial-gradient(circle at 50% 10%, #2A2A2A 0%, #0A0A0A 100%);
+            --ink: #E0E0E0;
+            --accent: #D4AF37;
+            --muted: #666666;
+            --surface: #1E1E1E;
+            --border: rgba(255,255,255,0.08);
+            --highlight: #333026;
+            --sidebar-bg: rgba(18, 18, 18, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            background-color: var(--bg-fallback);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--ink); 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar { width: 260px; padding: 2rem 1.5rem; border-right: 1px solid var(--border); background: var(--sidebar-bg); backdrop-filter: blur(20px); display: flex; flex-direction: column; gap: 2rem; z-index: 10; }
+        .logo { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.1em; display: flex; justify-content: space-between; }
+        .theme-toggle { cursor: pointer; font-size: 1.2rem; }
+        .nav-menu { display: flex; flex-direction: column; gap: 0.25rem; }
+        .nav-item { padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+        .nav-item:hover { color: var(--ink); }
+        .nav-item.active { background-color: var(--ink); color: var(--bg-fallback); }
+        .nav-controls { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; }
+        label { font-size: 0.7rem; text-transform: uppercase; font-weight: 600; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+        select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; background-color: var(--surface); color: var(--ink); }
+
+        /* Main Content */
+        .main { flex: 1; padding: 3rem 8%; overflow-y: auto; position: relative; display: flex; gap: 2rem; }
+        .content-area { flex: 1; max-width: 750px; }
+        .view { display: none; animation: fadeUp 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+        .chapter-title { font-size: 0.9rem; color: var(--muted); margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+
+        /* Timeline */
+        .timeline-post { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .post-content { font-family: 'Lora', serif; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; }
+        .post-actions { display: flex; gap: 1.5rem; color: var(--muted); font-size: 0.8rem; }
+        .post-actions span { cursor: pointer; }
+        .post-actions span:hover { color: var(--accent); }
+
+        /* Reader */
+        .verse-wrapper { position: relative; display: flex; margin-bottom: 2rem; }
+        .verse { font-family: 'Lora', serif; font-size: 1.35rem; line-height: 2.1; padding: 4px 8px; border-radius: 6px; transition: background 0.3s; }
+        .v-num { font-size: 0.75rem; color: var(--accent); font-weight: 600; vertical-align: super; margin-right: 12px; }
+        .word { cursor: pointer; padding: 2px 3px; border-radius: 4px; transition: all 0.2s; display: inline-block; }
+        .word:hover { background-color: var(--highlight); transform: translateY(-2px) scale(1.05); }
+        .word.highlighted { background-color: var(--highlight); border-bottom: 2px solid var(--accent); }
+        .note-icon { font-size: 0.7rem; color: var(--accent); vertical-align: super; margin-left: 2px; cursor: pointer; }
+        
+        .verse-highlight-btn { position: absolute; left: -30px; top: 10px; cursor: pointer; color: var(--accent); opacity: 0.4; transition: opacity 0.2s; }
+        .verse-wrapper:hover .verse-highlight-btn { opacity: 1; }
+
+        /* Word Card Panel */
+        .word-panel { width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; height: fit-content; position: sticky; top: 2rem; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .word-panel.active { display: block; }
+        .tab-btn { padding: 0.5rem 1rem; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.85rem; border-bottom: 2px solid transparent; display: inline-block; margin-right: 1rem; }
+        .tab-btn.active { color: var(--ink); border-bottom: 2px solid var(--accent); }
+        .tab-content { display: none; margin-top: 1rem; }
+        .tab-content.active { display: block; }
+
+        /* Library */
+        .library-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; }
+        .card h4 { margin-top: 0; font-family: 'Space Grotesk'; margin-bottom: 0.5rem; }
+        .card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+
+        .mark-btn { padding: 0.6rem 1rem; border: 1px solid var(--border); background: var(--bg-fallback); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--ink); margin-top: 1rem; margin-right: 0.5rem; transition: all 0.2s; }
+        .mark-btn:hover { border-color: var(--accent); background: var(--highlight); }
+        .btn-primary { background: var(--accent); color: white; border: none; }
+        .btn-remove { background: #d9534f; color: white; border: none; }
+    </style>
+</head>
+<body data-theme="light">
+
+    <div class="sidebar">
+        <div class="logo">
+            <span>FOLIO</span>
+            <span class="theme-toggle" onclick="toggleTheme()">🌙</span>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="switchView('timeline', this)">The Timeline</div>
+            <div class="nav-item" onclick="switchView('reader', this)">The Reader</div>
+            <div class="nav-item" onclick="switchView('library', this)">The Library</div>
+            <div class="nav-item" onclick="switchView('planner', this)">The Planner</div>
+            <div class="nav-item" onclick="switchView('profile', this)">My Profile</div>
+        </div>
+        <div class="nav-controls" id="readerControls" style="display:none;">
+            <div><label>Book</label><select id="bookSelect" onchange="loadBook()"></select></div>
+            <div><label>Chapter</label><select id="chapterSelect" onchange="renderChapter()"></select></div>
+        </div>
+    </div>
+    
+    <div class="main">
+        <div class="content-area">
+            <!-- TIMELINE VIEW -->
+            <div id="timelineView" class="view active">
+                <div class="page-title">The Timeline</div>
+                <div class="chapter-title">Thoughts and revelations from the community.</div>
+                
+                <div class="timeline-post" style="border-left: 4px solid var(--accent);">
+                    <textarea id="newPostContent" placeholder="Share a thought..." style="width:100%; border:none; background:transparent; font-family:'Lora'; font-size:1.1rem; color:var(--ink); outline:none; resize:none; min-height:80px;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                        <input type="text" id="newPostRef" placeholder="Reference (e.g. John 3:16)" style="border:1px solid var(--border); padding:0.4rem; border-radius:4px; background:var(--bg-fallback); color:var(--ink); font-size:0.8rem;">
+                        <button class="mark-btn btn-primary" onclick="createPost()">Publish</button>
+                    </div>
+                </div>
+                <div id="feedContainer"></div>
+            </div>
+
+            <!-- READER VIEW -->
+            <div id="readerView" class="view">
+                <div class="page-title" id="bookTitleDisplay">The Reader</div>
+                <div class="chapter-title" id="chapterTitleDisplay">Select a book to begin</div>
+                <div id="readerContent"></div>
+            </div>
+
+            <!-- LIBRARY VIEW -->
+            <div id="libraryView" class="view">
+                <div class="page-title">The Library</div>
+                <div class="chapter-title">Upload your own texts, or download public domain books and academic curricula.</div>
+                
+                <div class="library-grid">
+                    <div class="card" style="border-top: 4px solid var(--accent);">
+                        <h4>Upload a Text</h4>
+                        <p>Submit a book, paper, or curriculum for AI vetting.</p>
+                        <input type="text" id="uploadTitle" placeholder="Book Title" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                        <input type="text" id="uploadAuthor" placeholder="Author" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                        <input type="file" id="uploadFile" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                        <button class="mark-btn btn-primary" onclick="uploadBook()">Submit</button>
+                    </div>
+
+                    <div class="card" style="border-top: 4px solid var(--ink);">
+                        <h4>Download a Text</h4>
+                        <p>Free access to classical literature and syllabi.</p>
+                        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem;">
+                            <button class="mark-btn" onclick="alert('Downloading...')">📖 The Imitation of Christ (PDF)</button>
+                            <button class="mark-btn" onclick="alert('Downloading...')">📚 WAEC Mathematics Syllabus (PDF)</button>
+                            <button class="mark-btn" onclick="alert('Downloading...')">📜 The Constitution of Nigeria (PDF)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chapter-title">Your Uploaded Texts</div>
+                <div class="grid-cards" id="libraryContainer"></div>
+            </div>
+
+            <!-- PLANNER VIEW -->
+            <div id="plannerView" class="view">
+                <div class="page-title">The Planner</div>
+                <div class="chapter-title">Track your reading progress.</div>
+                
+                <div class="card" style="margin-bottom:2rem;">
+                    <h4>Select a Book to Plan</h4>
+                    <select id="planBookSelect" onchange="updatePlanProgress()" style="margin-bottom:1rem;"></select>
+                    <p id="planStatus" style="font-weight:600; color:var(--accent);">Select a book to see your progress.</p>
+                </div>
+            </div>
+
+            <!-- PROFILE VIEW -->
+            <div id="profileView" class="view">
+                <div class="page-title">My Profile</div>
+                <div class="chapter-title">Your reading journey.</div>
+                
+                <div class="card" style="display:flex; gap:2rem; align-items:center; margin-bottom:2rem;">
+                    <div class="avatar" id="profileAvatar" style="width:80px; height:80px; font-size:2rem;">V</div>
+                    <div style="flex:1;">
+                        <h2 id="profileUsername" style="margin:0; font-family:'Space Grotesk';">@Victor</h2>
+                        <p id="profileBio" style="color:var(--muted); margin:0.5rem 0;">Loading...</p>
+                        <div style="display:flex; gap:1.5rem; font-size:0.9rem; margin-top:1rem;">
+                            <span><strong id="profilePostCount">0</strong> Posts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="editProfileCard" style="display:none; border-left: 4px solid var(--accent);">
+                    <h4>Edit Profile</h4>
+                    <input type="text" id="editUsername" placeholder="Username" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                    <input type="text" id="editBio" placeholder="Bio" style="width:100%; padding:0.6rem; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--bg-fallback); color:var(--ink); border-radius:6px;">
+                    <button class="mark-btn btn-primary" onclick="saveProfile()">Save Changes</button>
+                    <button class="mark-btn" onclick="document.getElementById('editProfileCard').style.display='none'">Cancel</button>
+                </div>
+
+                <button class="mark-btn" id="editBtn" onclick="showEditForm()">Edit Profile</button>
+            </div>
+        </div>
+
+        <!-- WORD CARD PANEL -->
+        <div class="word-panel" id="wordPanel">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:1rem; margin-bottom:1rem;">
+                <h2 id="modalWordTitle" style="margin:0; font-family:'Space Grotesk';">Word</h2>
+                <span style="cursor:pointer; font-size:1.2rem;" onclick="closeWordPanel()">×</span>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <span class="tab-btn active" onclick="switchModalTab('context', this)">Original</span>
+                <span class="tab-btn" onclick="switchModalTab('dictionary', this)">Dictionary</span>
+            </div>
+
+            <div id="modalContextTab" class="tab-content active">
+                <div id="origWord" style="font-size:1.8rem; font-family:'Lora'; margin-bottom:0.5rem;"></div>
+                <div id="translitWord" style="color:var(--muted); margin-bottom:1rem;"></div>
+                <div style="background:var(--bg-fallback); padding:1rem; border-radius:8px;">
+                    <span id="strongsNum" style="color:var(--accent); font-weight:600;"></span>
+                    <div id="parsingInfo" style="color:var(--muted); font-style:italic;"></div>
+                </div>
+                <p style="margin-top: 1rem;"><strong>Concordance:</strong> Appears <span id="concordanceCount">0</span> times.</p>
+            </div>
+            
+            <div id="modalDictTab" class="tab-content">
+                <p id="dictDefinition" style="line-height:1.6;">Loading...</p>
+            </div>
+
+            <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <input type="text" id="noteInput" placeholder="Add a private note..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:6px; background:var(--bg-fallback); color:var(--ink); margin-bottom:0.5rem;">
+                <button class="mark-btn btn-primary" onclick="markWord('highlight')">Highlight Word</button>
+                <button class="mark-btn" onclick="markWord('note')">Save Note</button>
+                <button class="mark-btn" onclick="quoteToTimeline()">Quote</button>
+                <div id="removeMarkContainer" style="display:none;">
+                    <button class="mark-btn btn-remove" onclick="removeMark()">Remove Mark</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentBook = null;
+        let currentWord = null;
+        let currentWordMarkId = null;
+        let feed = [];
+        let library = [];
+        let currentMarks = [];
+        let completedChapters = JSON.parse(localStorage.getItem('folio_completed_chapters')) || [];
+
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.querySelector('.theme-toggle').textContent = isDark ? '🌙' : '☀️';
+        }
+
+        function switchView(viewName, element) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(viewName + 'View').classList.add('active');
+            element.classList.add('active');
+            document.getElementById('readerControls').style.display = (viewName === 'reader') ? 'flex' : 'none';
+            
+            document.getElementById('wordPanel').classList.remove('active');
+
+            if (viewName === 'timeline') fetchFeed();
+            if (viewName === 'library') fetchLibrary();
+            if (viewName === 'profile') fetchProfile();
+            if (viewName === 'planner') populatePlanner();
+        }
+
+        function switchModalTab(tab, el) {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            if (tab === 'context') {
+                document.getElementById('modalContextTab').classList.add('active');
+                document.getElementById('modalDictTab').classList.remove('active');
+            } else {
+                document.getElementById('modalContextTab').classList.remove('active');
+                document.getElementById('modalDictTab').classList.add('active');
+            }
+        }
+
+        // --- SOCIAL ---
+        async function fetchFeed() {
+            const res = await fetch('/api/posts');
+            feed = await res.json();
+            renderFeed();
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feedContainer');
+            container.innerHTML = '';
+            feed.forEach(post => {
+                const div = document.createElement('div');
+                div.className = 'timeline-post';
+                const username = post.folio_profiles ? post.folio_profiles.username : "Unknown";
+                div.innerHTML = `
+                    <div class="post-header">
+                        <div class="avatar">${username[0]}</div>
+                        <div><strong>@${username}</strong></div>
+                    </div>
+                    <div class="post-content">${post.content}</div>
+                    <div style="font-size:0.8rem; color:var(--accent); margin-bottom:1rem;">${post.book_reference || ''}</div>
+                    <div class="post-actions">
+                        <span onclick="reactToPost('${post.id}')">💡 ${post.reaction_count || 0} Likes</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function createPost() {
+            const content = document.getElementById('newPostContent').value;
+            const ref = document.getElementById('newPostRef').value;
+            if (content) {
+                await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content: content, book_reference: ref})
+                });
+                document.getElementById('newPostContent').value = '';
+                document.getElementById('newPostRef').value = '';
+                fetchFeed();
+            }
+        }
+
+        async function reactToPost(postId) {
+            await fetch('/api/reactions', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({post_id: postId, type: 'like'})
+            });
+            fetchFeed();
+        }
+
+        // --- READER ---
+        async function fetchBooks() {
+            const res = await fetch('/api/books');
+            const books = await res.json();
+            const select = document.getElementById('bookSelect');
+            const planSelect = document.getElementById('planBookSelect');
+            books.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.name;
+                opt.textContent = b.name;
+                select.appendChild(opt);
+                
+                const planOpt = document.createElement('option');
+                planOpt.value = b.name;
+                planOpt.textContent = b.name;
+                planSelect.appendChild(planOpt);
+            });
+            loadBook();
+        }
+
+        async function loadBook() {
+            const bookName = document.getElementById('bookSelect').value;
+            const res = await fetch(`/api/book/${bookName}`);
+            currentBook = await res.json();
+            document.getElementById('bookTitleDisplay').textContent = bookName;
+            
+            const chapters = [...new Set(currentBook.text_nodes.map(n => n.chapter))].sort((a,b) => a-b);
+            const select = document.getElementById('chapterSelect');
+            select.innerHTML = '';
+            chapters.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = `Chapter ${c}`;
+                select.appendChild(opt);
+            });
+            renderChapter();
+        }
+
+        async function renderChapter() {
+            const chapter = parseInt(document.getElementById('chapterSelect').value);
+            const bookName = document.getElementById('bookSelect').value;
+            document.getElementById('chapterTitleDisplay').textContent = `Chapter ${chapter}`;
+            
+            const resM = await fetch(`/api/marks/${bookName}/${chapter}`);
+            currentMarks = await resM.json();
+            
+            const verses = currentBook.text_nodes.filter(n => n.chapter === chapter);
+            const container = document.getElementById('readerContent');
+            container.innerHTML = '';
+
+            const isCompleted = completedChapters.includes(`${bookName}_${chapter}`);
+            const completeBtn = document.createElement('button');
+            completeBtn.className = 'mark-btn';
+            completeBtn.textContent = isCompleted ? "✅ Chapter Read" : "Mark Chapter as Read";
+            completeBtn.style.marginBottom = "2rem";
+            completeBtn.onclick = () => markChapterRead(bookName, chapter);
+            container.appendChild(completeBtn);
+
+            verses.forEach(v => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'verse-wrapper';
+
+                const highlightBtn = document.createElement('span');
+                highlightBtn.className = 'verse-highlight-btn';
+                highlightBtn.innerHTML = '✎';
+                highlightBtn.title = "Highlight Verse";
+                highlightBtn.onclick = () => toggleVerseHighlight(bookName, chapter, v.node_id);
+                wrapper.appendChild(highlightBtn);
+
+                const div = document.createElement('div');
+                div.className = 'verse';
+                
+                const verseMark = currentMarks.find(m => m.verse_id === String(v.node_id) && m.word_id === "");
+                if (verseMark) div.style.backgroundColor = 'var(--highlight)';
+
+                div.innerHTML = `<span class="v-num">${v.verse}</span>`;
+                
+                const words = currentBook.word_tokens.filter(t => t.node_id === v.node_id);
+                words.forEach(w => {
+                    const span = document.createElement('span');
+                    span.className = 'word';
+                    
+                    const wordMark = currentMarks.find(m => m.word_id === String(w.word_id));
+                    if (wordMark) {
+                        if (wordMark.mark_type === 'highlight') span.classList.add('highlighted');
+                        if (wordMark.mark_type === 'note') {
+                            const icon = document.createElement('span');
+                            icon.className = 'note-icon';
+                            icon.textContent = '📝';
+                            span.appendChild(icon);
+                        }
+                    }
+
+                    span.textContent = w.raw_word + ' ';
+                    span.onclick = () => openWordCard(w);
+                    div.appendChild(span);
+                });
+                wrapper.appendChild(div);
+                container.appendChild(wrapper);
+            });
+        }
+
+        async function toggleVerseHighlight(bookName, chapter, verseId) {
+            const existingMark = currentMarks.find(m => m.verse_id === String(verseId) && m.word_id === "");
+            if (existingMark) {
+                await fetch(`/api/marks/${existingMark.id}`, { method: 'DELETE' });
+            } else {
+                await fetch('/api/marks', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({book_name: bookName, chapter: chapter, verse_id: String(verseId), mark_type: 'highlight'})
+                });
+            }
+            renderChapter();
+        }
+
+        function markChapterRead(bookName, chapter) {
+            const key = `${bookName}_${chapter}`;
+            if (!completedChapters.includes(key)) {
+                completedChapters.push(key);
+                localStorage.setItem('folio_completed_chapters', JSON.stringify(completedChapters));
+                renderChapter();
+            }
+        }
+
+        function openWordCard(wordObj) {
+            currentWord = wordObj;
+            document.getElementById('wordPanel').classList.add('active');
+            document.getElementById('modalWordTitle').textContent = wordObj.raw_word;
+            
+            const existingMark = currentMarks.find(m => m.word_id === String(wordObj.word_id));
+            if (existingMark) {
+                currentWordMarkId = existingMark.id;
+                document.getElementById('removeMarkContainer').style.display = 'block';
+                if (existingMark.note) document.getElementById('noteInput').value = existingMark.note;
+            } else {
+                currentWordMarkId = null;
+                document.getElementById('removeMarkContainer').style.display = 'none';
+                document.getElementById('noteInput').value = "";
+            }
+            
+            document.getElementById('origWord').textContent = wordObj.hebrew_greek || "";
+            document.getElementById('translitWord').textContent = wordObj.transliteration || "";
+            document.getElementById('strongsNum').textContent = `Strong's: ${wordObj.strongs || "N/A"}`;
+            document.getElementById('parsingInfo').textContent = wordObj.parsing || "";
+            
+            const count = currentBook.word_tokens.filter(t => t.raw_word.toLowerCase() === wordObj.raw_word.toLowerCase()).length;
+            document.getElementById('concordanceCount').textContent = count;
+            
+            document.getElementById('dictDefinition').textContent = "Fetching...";
+            fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordObj.raw_word}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data[0] && data[0].meanings) {
+                        document.getElementById('dictDefinition').textContent = data[0].meanings[0].definitions[0].definition;
+                    } else {
+                        document.getElementById('dictDefinition').textContent = "Definition not found.";
+                    }
+                }).catch(() => document.getElementById('dictDefinition').textContent = "Offline or API error.");
+                
+            switchModalTab('context', document.querySelector('.tab-btn'));
+        }
+
+        function closeWordPanel() { 
+            document.getElementById('wordPanel').classList.remove('active'); 
+        }
+
+        async function markWord(type) {
+            const note = document.getElementById('noteInput').value;
+            const bookName = document.getElementById('bookSelect').value;
+            const chapter = parseInt(document.getElementById('chapterSelect').value);
+            
+            await fetch('/api/marks', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    book_name: bookName, chapter: chapter, verse_id: String(currentWord.node_id),
+                    word_id: String(currentWord.word_id), mark_type: type, note: note
+                })
+            });
+            renderChapter();
+            closeWordPanel();
+        }
+
+        async function removeMark() {
+            if (currentWordMarkId) {
+                await fetch(`/api/marks/${currentWordMarkId}`, { method: 'DELETE' });
+                renderChapter();
+                closeWordPanel();
+            }
+        }
+
+        function quoteToTimeline() {
+            const quote = `"${currentWord.raw_word}" — Strong's ${currentWord.strongs}. Original: ${currentWord.hebrew_greek}`;
+            document.getElementById('newPostContent').value = quote;
+            closeWordPanel();
+            switchView('timeline', document.querySelector('.nav-menu .nav-item'));
+        }
+
+        // --- PLANNER ---
+        function updatePlanProgress() {
+            const bookName = document.getElementById('planBookSelect').value;
+            const totalChapters = [...new Set(currentBook ? currentBook.text_nodes.map(n => n.chapter) : [])].length;
+            const readChapters = completedChapters.filter(k => k.startsWith(bookName + '_')).length;
+            const percent = totalChapters > 0 ? Math.round((readChapters / totalChapters) * 100) : 0;
+            document.getElementById('planStatus').textContent = `${bookName}: ${readChapters} / ${totalChapters} chapters read (${percent}%)`;
+        }
+
+        function populatePlanner() { updatePlanProgress(); }
+
+        // --- LIBRARY ---
+        async function fetchLibrary() {
+            const res = await fetch('/api/library');
+            library = await res.json();
+            const container = document.getElementById('libraryContainer');
+            container.innerHTML = '';
+            
+            const bibleCard = document.createElement('div');
+            bibleCard.className = 'card';
+            bibleCard.innerHTML = `<h4>The Literal Bible (BSB)</h4><p>66 Books</p><button class="mark-btn" onclick="switchView('reader', document.querySelector('.nav-menu .nav-item:nth-child(2)'))">Read</button>`;
+            container.appendChild(bibleCard);
+
+            library.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `<h4>${item.title}</h4><p>${item.author || 'Unknown'} • ${item.type}</p><button class="mark-btn">Read</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        async function uploadBook() {
+            const title = document.getElementById('uploadTitle').value;
+            const author = document.getElementById('uploadAuthor').value;
+            const fileInput = document.getElementById('uploadFile');
+            
+            if (title && fileInput.files.length > 0) {
+                const fileName = fileInput.files[0].name;
+                await fetch('/api/library/upload', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({title: title, author: author, type: 'Book', file_url: fileName})
+                });
+                document.getElementById('uploadTitle').value = '';
+                document.getElementById('uploadAuthor').value = '';
+                document.getElementById('uploadFile').value = '';
+                fetchLibrary();
+            } else {
+                alert("Please provide a title and select a file.");
+            }
+        }
+
+        // --- PROFILE ---
+        async function fetchProfile() {
+            const res = await fetch('/api/profile');
+            const profile = await res.json();
+            
+            if (profile.username) {
+                document.getElementById('profileUsername').textContent = '@' + profile.username;
+                document.getElementById('profileBio').textContent = profile.bio || "No bio yet.";
+                document.getElementById('profileAvatar').textContent = profile.username[0].toUpperCase();
+                document.getElementById('editUsername').value = profile.username;
+                document.getElementById('editBio').value = profile.bio || "";
+            }
+            
+            const myPosts = feed.filter(p => p.folio_profiles && p.folio_profiles.username === (profile.username || "Victor"));
+            document.getElementById('profilePostCount').textContent = myPosts.length;
+        }
+
+        function showEditForm() {
+            document.getElementById('editProfileCard').style.display = 'block';
+            document.getElementById('editBtn').style.display = 'none';
+        }
+
+        async function saveProfile() {
+            const newName = document.getElementById('editUsername').value;
+            const newBio = document.getElementById('editBio').value;
+            
+            if (newName) {
+                await fetch('/api/profile/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: newName, bio: newBio})
+                });
+                document.getElementById('editProfileCard').style.display = 'none';
+                document.getElementById('editBtn').style.display = 'block';
+                fetchProfile();
+                fetchFeed();
+            }
+        }
+
+        // Init
+        fetchBooks();
+        fetchFeed();
+    </script>
+</body>
+</html>
