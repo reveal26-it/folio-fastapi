@@ -43,6 +43,10 @@ class MarkCreate(BaseModel):
 def read_root():
     return FileResponse("index.html")
 
+@app.get("/app")
+def read_app():
+    return FileResponse("app.html")
+
 @app.get("/api/books")
 def get_books():
     files = [f for f in os.listdir(".") if f.endswith(".json") and f != "folio_ledger_full.json"]
