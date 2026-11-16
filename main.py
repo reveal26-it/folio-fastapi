@@ -41,7 +41,7 @@ class MarkCreate(BaseModel):
 
 @app.get("/")
 def read_root():
-    return FileResponse("index.html")
+    return FileResponse("landing.html")
 
 @app.get("/app")
 def read_app():
